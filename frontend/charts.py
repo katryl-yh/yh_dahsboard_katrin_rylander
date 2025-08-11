@@ -74,6 +74,11 @@ def create_county_bar(df_summary,
         first_category = categories[-1]
         first_value_approved = df_summary["Beviljade utbildningar"].iloc[-1]
         first_value_total = df_summary["Ansökta utbildningar"].iloc[-1]
+
+        # Calculate dynamic standoff based on plot height and number of categories
+        plot_height = height - 120  # Subtract margins (t=80, b=40)
+        bar_height = plot_height / len(categories)
+        dynamic_standoff = bar_height / 2
         
         arrow_annotations = [
             dict(
@@ -83,12 +88,13 @@ def create_county_bar(df_summary,
                 text="antal beviljade",
                 showarrow=True,
                 arrowhead=5,
-                ax=20, ay=70,
+                ax=-20, ay=-2.0*dynamic_standoff,
                 font=dict(color=BLUE_11, size=13),
                 arrowcolor=BLUE_11,
                 arrowwidth=2,
-                xanchor="center",
-                yanchor="middle",
+                xanchor="auto",
+                yanchor="top",
+                standoff=dynamic_standoff
             ),
             dict(
                 xref="x", yref="y",
@@ -97,12 +103,13 @@ def create_county_bar(df_summary,
                 text="totalt antal",
                 showarrow=True,
                 arrowhead=5,
-                ax=0, ay=50,
+                ax=0, ay=-2.0*dynamic_standoff,
                 font=dict(color=GRAY_12, size=13),
                 arrowcolor=GRAY_12,
                 arrowwidth=2,
-                xanchor="center",
-                yanchor="middle",
+                xanchor="auto",
+                yanchor="top",
+                standoff=dynamic_standoff
             )
         ]
         all_annotations.extend(arrow_annotations)
