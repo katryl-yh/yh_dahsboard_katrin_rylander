@@ -1,75 +1,210 @@
-import pandas as pd
-from utils.constants import DATA_DIRECTORY
+import logging
+import sys
+from pathlib import Path
+from typing import Tuple
 
-# Load data
-df = pd.read_excel(
-    DATA_DIRECTORY / "resultat-2025-for-kurser-inom-yh.xlsx",
-    sheet_name="Lista ansökningar",
+import pandas as pd
+
+from utils.constants import (
+    DATA_DIRECTORY,
+    EXCEL_RESULTS_FILE,
+    EXCEL_RESULTS_SHEET,
+    EXCEL_APPS_FILE,
+    EXCEL_APPS_SHEET,
+    REQUIRED_COLUMNS,
+    KEY_COL,
+    SOKT_PREFIX,
+    COL_TOTAL_SOKTA,
+    COL_TOTAL_BEVILJADE_PLATSER,
 )
 
-def get_county_data(df, county="Stockholm"):
-    """
-    Creates a summary of county data including:
-    1. DataFrame with education area statistics
-    2. Dictionary with overall county statistics
-    
-    Parameters:
-        df: DataFrame with course data
-        county: Name of county to analyze (default: "Stockholm")
-    
-    Returns:
-        tuple: (DataFrame, dict) where:
-        - DataFrame contains: Utbildningsområde, Ansökta utbildningar, 
-          Beviljade utbildningar, Beviljandegrad
-        - dict contains: county name, total courses, approved, rejected, approval rate
-    """
-    # Filter for county
-    county_df = df.query("Län == @county")
-    
-    # Calculate overall statistics
-    total_courses = int(len(county_df))
-    approved_courses = int((county_df['Beslut'] == 'Beviljad').sum())
-    rejected_courses = int((county_df['Beslut'] == 'Avslag').sum())
-    approval_rate = round((approved_courses / total_courses) * 100, 2) if total_courses > 0 else 0.0
+logging.basicConfig(level=logging.WARNING)
 
-    stats_dict = {
-        'Län': county,
-        'Ansökta Kurser': total_courses,
-        'Beviljade': approved_courses,
-        'Avslag': rejected_courses,
-        'Beviljandegrad (%)': approval_rate
+def _validate_df(df: pd.DataFrame, where: str = "dataframe"):
+    missing = REQUIRED_COLUMNS - set(df.columns)
+    if missing:
+        raise ValueError(f"Missing columns in {where}: {sorted(missing)}")
+
+def _read_data_or_exit(path: Path, sheet: str) -> pd.DataFrame:
+    try:
+        df_ = pd.read_excel(path, sheet_name=sheet, engine="openpyxl")
+    except FileNotFoundError:
+        print(f"Error: File not found: {path}", file=sys.stderr)
+        sys.exit(1)
+    except ImportError as e:
+        print(f"Error: {e}. Try: pip install openpyxl", file=sys.stderr)
+        sys.exit(1)
+    except ValueError as e:
+        print(f"Error: {e} (sheet='{sheet}')", file=sys.stderr)
+        sys.exit(1)
+    except Exception as e:
+        print(f"Unexpected error reading Excel: {e}", file=sys.stderr)
+        sys.exit(1)
+    return df_
+
+def enrich_base_data(
+    df_base: pd.DataFrame,
+    apps_filename: str = EXCEL_APPS_FILE,
+    sheet: str = EXCEL_APPS_SHEET,
+    key_col: str = KEY_COL,
+    prefix: str = SOKT_PREFIX,
+    suffix: str = "",
+) -> pd.DataFrame:
+    """
+    Enrich df_base with columns starting with `prefix` from the applications Excel.
+    Reuses _read_data_or_exit and left-joins on `key_col`. Adds COL_TOTAL_SOKTA as a row-wise sum.
+    """
+    if df_base is None or df_base.empty:
+        return df_base
+
+    try:
+        apps = _read_data_or_exit(DATA_DIRECTORY / apps_filename, sheet=sheet)
+    except SystemExit:
+        return df_base
+
+    if key_col not in df_base.columns:
+        logging.warning("Base df missing key column '%s'; enrichment skipped.", key_col)
+        return df_base
+    if key_col not in apps.columns:
+        logging.warning("Applications sheet missing key column '%s'; enrichment skipped.", key_col)
+        return df_base
+
+    base = df_base.copy()
+    base[key_col] = base[key_col].astype(str).str.strip()
+
+    apps = apps.copy()
+    apps[key_col] = apps[key_col].astype(str).str.strip()
+
+    wanted = [key_col] + [
+        c for c in apps.columns
+        if c != key_col and c.strip().casefold().startswith(prefix.casefold())
+    ]
+    if len(wanted) == 1:
+        logging.warning("No columns starting with '%s' found in '%s' (%s).", prefix, apps_filename, sheet)
+        return df_base
+
+    apps_sel = apps[wanted].copy()
+
+    # Try full-column numeric conversion (avoid deprecated errors='ignore')
+    for c in wanted:
+        if c == key_col:
+            continue
+        try:
+            apps_sel[c] = pd.to_numeric(apps_sel[c])
+        except (ValueError, TypeError):
+            pass
+
+    # Sum all sökta-antal columns into COL_TOTAL_SOKTA
+    sum_source_cols = [c for c in apps_sel.columns if c != key_col]
+    numeric_block = apps_sel[sum_source_cols].apply(lambda s: pd.to_numeric(s, errors="coerce"))
+    apps_sel[COL_TOTAL_SOKTA] = numeric_block.sum(axis=1, min_count=1).fillna(0).astype(int)
+
+    # Deduplicate by key (keep last)
+    apps_sel = apps_sel.drop_duplicates(subset=[key_col], keep="last")
+
+    # Optional suffix for name collisions
+    incoming_cols = [c for c in apps_sel.columns if c != key_col]
+    if suffix:
+        rename_map = {c: f"{c}{suffix}" for c in incoming_cols if c in base.columns}
+        if rename_map:
+            apps_sel = apps_sel.rename(columns=rename_map)
+    else:
+        collisions = [c for c in incoming_cols if c in base.columns]
+        if collisions:
+            logging.warning("Incoming columns collide with base: %s. Pandas may suffix duplicate names.", collisions)
+
+    try:
+        merged = base.merge(apps_sel, on=key_col, how="left", validate="m:1")
+    except Exception as e:
+        logging.warning("Validated merge failed: %s. Falling back to plain left join.", e)
+        merged = base.merge(apps_sel, on=key_col, how="left")
+
+    return merged
+
+def load_base_df(suffix_for_apps: str = " (ansökningar)") -> pd.DataFrame:
+    """Load, normalize, validate, and enrich the base dataset."""
+    df = _read_data_or_exit(DATA_DIRECTORY / EXCEL_RESULTS_FILE, sheet=EXCEL_RESULTS_SHEET)
+    df["Län"] = df["Län"].astype(str).str.strip()
+    _validate_df(df, "input Excel")
+    df = enrich_base_data(df, suffix=suffix_for_apps)
+    return df
+
+def _sum_col_numeric(d: pd.DataFrame, col: str) -> int:
+    if col in d.columns:
+        return int(pd.to_numeric(d[col], errors="coerce").sum(skipna=True))
+    return 0
+
+def get_statistics(df_or_filtered: pd.DataFrame, county: str | None = None, label: str | None = None) -> Tuple[pd.DataFrame, dict]:
+    """
+    Return (summary_df, stats_dict).
+    - If county is provided: filter df_or_filtered by Län == county (normalized).
+    - If county is None: df_or_filtered is assumed pre-filtered (e.g., df_selected_county).
+      'label' lets you name the scope (e.g., selected county or 'Sverige').
+    """
+    _validate_df(df_or_filtered, "get_statistics() input")
+
+    if county is not None:
+        sel = str(county).strip()
+        scope_df = df_or_filtered[df_or_filtered["Län"].astype(str).str.strip() == sel].copy()
+        scope_label = label or sel
+    else:
+        scope_df = df_or_filtered.copy()
+        uniq = scope_df["Län"].dropna().unique().tolist()
+        scope_label = label or (uniq[0] if len(uniq) == 1 else "Sverige")
+
+    total_courses = int(len(scope_df))
+    approved_courses = int((scope_df["Beslut"] == "Beviljad").sum())
+    rejected_courses = int((scope_df["Beslut"] == "Avslag").sum())
+    approval_rate = round((approved_courses / total_courses) * 100, 1) if total_courses else 0.0
+
+    stats = {
+        "Län": scope_label,
+        "Ansökta Kurser": total_courses,
+        "Beviljade": approved_courses,
+        "Avslag": rejected_courses,
+        "Beviljandegrad (%)": approval_rate,
+        "Ansökta platser": _sum_col_numeric(scope_df, COL_TOTAL_SOKTA),
+        "Beviljade platser": _sum_col_numeric(scope_df, COL_TOTAL_BEVILJADE_PLATSER),
     }
-    
-    # Get education area breakdown
-    total_df = (
-        county_df["Utbildningsområde"]
-        .value_counts()
+
+    if scope_df.empty:
+        summary = pd.DataFrame(columns=[
+            "Utbildningsområde", "Ansökta utbildningar", "Beviljade utbildningar", "Beviljandegrad"
+        ])
+        return summary, stats
+
+    total_series = (
+        scope_df.groupby("Utbildningsområde").size().rename("Ansökta utbildningar")
+    )
+    approved_series = (
+        scope_df[scope_df["Beslut"] == "Beviljad"]
+        .groupby("Utbildningsområde")
+        .size()
+        .rename("Beviljade utbildningar")
+    )
+
+    summary = (
+        pd.concat([total_series, approved_series], axis=1)
+        .fillna(0)
         .reset_index()
-        .rename({"count": "Ansökta utbildningar"}, axis=1)
     )
-    
-    approved_df = (
-        county_df[county_df["Beslut"] == 'Beviljad']["Utbildningsområde"]
-        .value_counts()
-        .reset_index()
-        .rename({"count": "Beviljade utbildningar"}, axis=1)
+    summary["Ansökta utbildningar"] = summary["Ansökta utbildningar"].astype(int)
+    summary["Beviljade utbildningar"] = summary["Beviljade utbildningar"].astype(int)
+    summary["Beviljandegrad"] = (
+        (summary["Beviljade utbildningar"] / summary["Ansökta utbildningar"] * 100).fillna(0).round(1)
     )
-    
-    # Merge total and approved
-    result_df = pd.merge(
-        total_df, 
-        approved_df, 
-        on="Utbildningsområde", 
-        how="left"
-    ).fillna(0)
-    
-    # Calculate approval rate per education area
-    result_df["Beviljandegrad"] = (
-        (result_df["Beviljade utbildningar"] / result_df["Ansökta utbildningar"] * 100)
-        .round(1)
-    )
-    
-    # Sort by total applications
-    result_df = result_df.sort_values("Ansökta utbildningar", ascending=True)
-    
-    return result_df, stats_dict
+    summary = summary.sort_values("Ansökta utbildningar", ascending=True)
+    return summary, stats
+
+def compute_national_stats(df: pd.DataFrame) -> dict:
+    decisions = df["Beslut"].value_counts()
+    total = int(len(df))
+    approved = int(decisions.get("Beviljad", 0))
+    rate = f"{(approved / total * 100):.1f}%" if total else "0%"
+    return {
+        "national_total_courses": total,
+        "national_approved_courses": approved,
+        "national_approval_rate_str": rate,
+        "national_requested_places": _sum_col_numeric(df, COL_TOTAL_SOKTA),
+        "national_approved_places": _sum_col_numeric(df, COL_TOTAL_BEVILJADE_PLATSER),
+    }
