@@ -3,6 +3,9 @@ from taipy.gui import Gui
 import taipy.gui.builder as tgb
 from pathlib import Path
 import sys
+import logging
+
+logging.basicConfig(level=logging.WARNING)
 
 REQUIRED_COLUMNS = {"Län", "Beslut", "Utbildningsområde"}
 
@@ -15,7 +18,7 @@ def _safe_refresh(state, *var_names):
             try:
                 state.refresh(v)
             except Exception:
-                pass
+                logging.warning("refresh(%s) failed: %s", v, e)
 
 def _validate_df(df: pd.DataFrame, where: str = "dataframe"):
     missing = REQUIRED_COLUMNS - set(df.columns)
@@ -42,51 +45,50 @@ df = _read_data_or_exit(
 df["Län"] = df["Län"].astype(str).str.strip()
 _validate_df(df, "input Excel")
 
-def get_statistics(df_or_filtered: pd.DataFrame, county: str | None = None):
+def get_statistics(df_or_filtered: pd.DataFrame, county: str | None = None, label: str | None = None):
     """
-    Return (summary_df, stats_dict) for a county.
-    If `county` is None, df_or_filtered is assumed to be pre-filtered (df_selected_county).
+    Return (summary_df, stats_dict).
+    - If county is provided: filter df_or_filtered by Län == county (normalized).
+    - If county is None: df_or_filtered is assumed pre-filtered (e.g., df_selected_county).
+      'label' lets you name the scope (e.g., selected county or 'Sverige').
+    """
+    _validate_df(df_or_filtered, "get_statistics() input")
 
-    summary_df columns:
-      - 'Utbildningsområde', 'Ansökta utbildningar', 'Beviljade utbildningar', 'Beviljandegrad'
-    stats_dict keys:
-      - 'Län', 'Ansökta Kurser', 'Beviljade', 'Avslag', 'Beviljandegrad (%)'
-    """
     if county is not None:
-        county_df = df_or_filtered[df_or_filtered["Län"] == county].copy()
+        sel = str(county).strip()
+        scope_df = df_or_filtered[df_or_filtered["Län"].astype(str).str.strip() == sel].copy()
+        scope_label = label or sel
     else:
-        county_df = df_or_filtered.copy()
-        if not county_df.empty and "Län" in county_df.columns:
-            county = str(county_df["Län"].mode().iat[0])
-        else:
-            county = "Okänd"
+        scope_df = df_or_filtered.copy()
+        uniq = scope_df["Län"].dropna().unique().tolist()
+        scope_label = label or (uniq[0] if len(uniq) == 1 else "Sverige")
 
-    total_courses = int(len(county_df))
-    approved_courses = int((county_df["Beslut"] == "Beviljad").sum())
-    rejected_courses = int((county_df["Beslut"] == "Avslag").sum())
+    total_courses = int(len(scope_df))
+    approved_courses = int((scope_df["Beslut"] == "Beviljad").sum())
+    rejected_courses = int((scope_df["Beslut"] == "Avslag").sum())
     approval_rate = round((approved_courses / total_courses) * 100, 1) if total_courses else 0.0
 
     stats = {
-        "Län": county,
+        "Län": scope_label,
         "Ansökta Kurser": total_courses,
         "Beviljade": approved_courses,
         "Avslag": rejected_courses,
         "Beviljandegrad (%)": approval_rate,
     }
 
-    if county_df.empty:
+    if scope_df.empty:
         summary = pd.DataFrame(columns=[
             "Utbildningsområde", "Ansökta utbildningar", "Beviljade utbildningar", "Beviljandegrad"
         ])
         return summary, stats
 
     total_series = (
-        county_df.groupby("Utbildningsområde")
+        scope_df.groupby("Utbildningsområde")
         .size()
         .rename("Ansökta utbildningar")
     )
     approved_series = (
-        county_df[county_df["Beslut"] == "Beviljad"]
+        scope_df[scope_df["Beslut"] == "Beviljad"]
         .groupby("Utbildningsområde")
         .size()
         .rename("Beviljade utbildningar")
@@ -95,8 +97,7 @@ def get_statistics(df_or_filtered: pd.DataFrame, county: str | None = None):
     summary = (
         pd.concat([total_series, approved_series], axis=1)
         .fillna(0)
-        .reset_index()
-        .rename(columns={"index": "Utbildningsområde"})
+        .reset_index()  # -> ['Utbildningsområde', 'Ansökta utbildningar', 'Beviljade utbildningar']
     )
     summary["Ansökta utbildningar"] = summary["Ansökta utbildningar"].astype(int)
     summary["Beviljade utbildningar"] = summary["Beviljade utbildningar"].astype(int)
@@ -121,7 +122,7 @@ national_approval_rate_str = f"{(national_approved_courses / national_total_cour
 all_counties = sorted(df["Län"].dropna().unique().tolist())
 selected_county = "Stockholm"
 df_selected_county = df[df["Län"] == selected_county].copy()
-summary, stats = get_statistics(df_selected_county, selected_county)
+summary, stats = get_statistics(df_selected_county, county=None, label=selected_county)
 
 # Simple, bindable KPI variables (reactive)
 total_courses = int(stats["Ansökta Kurser"])
@@ -134,24 +135,19 @@ def on_county_change(state, var_name=None, var_value=None):
         state.selected_county = str(var_value).strip()
 
     county = (state.selected_county or "").strip()
-    if county not in state.all_counties:
-        # Fallback to first available county to avoid empty stats on bad value
-        county = state.all_counties[0]
-        state.selected_county = county
-    # NOTE: If lov comes directly from the DataFrame, users can only pick values in that list. 
-    # However, keeping the guard is still useful for edge cases, 
-    # example: The DataFrame is recomputed/reloaded and the current selection becomes invalid.
+    if not county or county not in state.all_counties:
+        # Ignore invalid or no-op selection
+        return
     
-    # Recompute filtered df and KPIs
     try:
+        # Filter and compute stats on pre-filtered df; set label explicitly
         state.df_selected_county = state.df[state.df["Län"].astype(str).str.strip() == county].copy()
-        _validate_df(state.df_selected_county, f"filtered county='{county}'")
-        state.summary, state.stats = get_statistics(state.df_selected_county, county)
+        state.summary, state.stats = get_statistics(state.df_selected_county, county=None, label=county)
         state.total_courses = int(state.stats["Ansökta Kurser"])
         state.approved_courses = int(state.stats["Beviljade"])
         state.approval_rate_str = f"{state.stats['Beviljandegrad (%)']:.1f}%"
     except Exception as e:
-        # Handle unexpected issues
+        logging.warning("on_county_change failed for '%s': %s", county, e)
         state.df_selected_county = pd.DataFrame()
         state.summary = pd.DataFrame()
         state.stats = {"Län": county, "Ansökta Kurser": 0, "Beviljade": 0, "Avslag": 0, "Beviljandegrad (%)": 0.0}
