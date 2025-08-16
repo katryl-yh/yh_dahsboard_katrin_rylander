@@ -134,27 +134,32 @@ approved_courses = int(stats["Beviljade"])
 approval_rate_str = f"{stats['Beviljandegrad (%)']:.1f}%"
 
 def on_county_change(state, var_name=None, var_value=None):
-    # Update and validate selection
-    if var_name == "selected_county" and var_value is not None:
-        state.selected_county = str(var_value).strip()
-
-    county = (state.selected_county or "").strip()
-    if not county or county not in state.all_counties:
-        # Ignore invalid or no-op selection
+    # Only handle the intended variable
+    if var_name != "selected_county":
         return
+
+    # Normalize incoming value and ignore invalid selections
+    new = (str(var_value).strip() if var_value is not None else "")
+    if not new or new == state.selected_county:
+        return
+    if new not in state.all_counties:
+        return
+
+    # Update selection
+    state.selected_county = new
     
     try:
         # Filter and compute stats on pre-filtered df; set label explicitly
-        state.df_selected_county = state.df[state.df["Län"].astype(str).str.strip() == county].copy()
-        state.summary, state.stats = get_statistics(state.df_selected_county, county=None, label=county)
+        state.df_selected_county = state.df[state.df["Län"].astype(str).str.strip() == new].copy()
+        state.summary, state.stats = get_statistics(state.df_selected_county, county=None, label=new)
         state.total_courses = int(state.stats["Ansökta Kurser"])
         state.approved_courses = int(state.stats["Beviljade"])
         state.approval_rate_str = f"{state.stats['Beviljandegrad (%)']:.1f}%"
     except Exception as e:
-        logging.warning("on_county_change failed for '%s': %s", county, e)
+        logging.warning("on_county_change failed for '%s': %s", new, e)
         state.df_selected_county = pd.DataFrame()
         state.summary = pd.DataFrame()
-        state.stats = {"Län": county, "Ansökta Kurser": 0, "Beviljade": 0, "Avslag": 0, "Beviljandegrad (%)": 0.0}
+        state.stats = {"Län": new, "Ansökta Kurser": 0, "Beviljade": 0, "Avslag": 0, "Beviljandegrad (%)": 0.0}
         state.total_courses = 0
         state.approved_courses = 0
         state.approval_rate_str = "0.0%"
