@@ -1,110 +1,147 @@
-import taipy.gui.builder as tgb
-from taipy.gui import Gui
+import logging
 import pandas as pd
-from utils.constants import DATA_DIRECTORY
-from frontend.charts import create_county_bar
-from backend.data_processing import df, get_county_data
+from taipy.gui import Gui
+import taipy.gui.builder as tgb
 
+from backend.data_processing import (
+    load_base_df,
+    get_statistics,
+    compute_national_stats,
+)
 
+logging.basicConfig(level=logging.WARNING)
 
+def _safe_refresh(state, *var_names):
+    if hasattr(state, "refresh"):
+        for v in var_names:
+            try:
+                state.refresh(v)
+            except Exception as e:
+                logging.warning("refresh(%s) failed: %s", v, e)
 
-def filter_data(state):
-    print(state)
-    state.df_county, state.df_stats = get_county_data(state.df, state.selected_county)
-    state.county_chart = create_county_bar(state.df_county, state.selected_county)
+# Load & prepare data
+df = load_base_df()
+nat = compute_national_stats(df)
 
+# Initial county state
+all_counties = sorted(df["Län"].dropna().unique().tolist())
+selected_county = all_counties[0] if all_counties else ""
+df_selected_county = df[df["Län"] == selected_county].copy()
+summary, stats = get_statistics(df_selected_county, county=None, label=selected_county)
 
-selected_county = "Stockholm"
-df_county, df_stats = get_county_data(df, selected_county)
-county_chart = create_county_bar(df_county, selected_county)
+# Bindable KPI scalars (reactive)
+total_courses = int(stats["Ansökta Kurser"])
+approved_courses = int(stats["Beviljade"])
+approval_rate_str = f"{stats['Beviljandegrad (%)']:.1f}%"
+requested_places = int(stats.get("Ansökta platser", 0))
+approved_places = int(stats.get("Beviljade platser", 0))
 
+def on_county_change(state, var_name=None, var_value=None):
+    if var_name != "selected_county":
+        return
+    selected = (str(var_value).strip() if var_value is not None else "").strip()
+    if not selected or selected not in state.all_counties:
+        return
 
-# --- National statistics ---
-# Calculate approval stats for Sweden for the selected year
-decisions = df["Beslut"].value_counts()
-approved = decisions.get("Beviljad", 0)
-total = decisions.sum()
-approval_rate = round(approved / total * 100, 1) if total > 0 else 0
+    state.selected_county = selected
+    try:
+        state.df_selected_county = state.df[state.df["Län"].astype(str).str.strip() == selected].copy()
+        state.summary, state.stats = get_statistics(state.df_selected_county, county=None, label=selected)
+        state.total_courses = int(state.stats["Ansökta Kurser"])
+        state.approved_courses = int(state.stats["Beviljade"])
+        state.approval_rate_str = f"{state.stats['Beviljandegrad (%)']:.1f}%"
+        state.requested_places = int(state.stats.get("Ansökta platser", 0))
+        state.approved_places = int(state.stats.get("Beviljade platser", 0))
+    except Exception as e:
+        logging.warning("on_county_change failed for '%s': %s", selected, e)
+        state.df_selected_county = pd.DataFrame()
+        state.summary = pd.DataFrame()
+        state.stats = {"Län": selected, "Ansökta Kurser": 0, "Beviljade": 0, "Avslag": 0, "Beviljandegrad (%)": 0.0}
+        state.total_courses = 0
+        state.approved_courses = 0
+        state.approval_rate_str = "0.0%"
+        state.requested_places = 0
+        state.approved_places = 0
 
+    _safe_refresh(
+        state,
+        "selected_county",
+        "df_selected_county",
+        "summary",
+        "stats",
+        "total_courses",
+        "approved_courses",
+        "approval_rate_str",
+        "requested_places",
+        "approved_places",
+    )
+
+# UI
 with tgb.Page() as page:
-    with tgb.part(class_name="container card stack-large"):
-        # Title
-        tgb.text("# MYH dashboard kurser 2025", mode="md")
-        tgb.text(
-            """
-            Denna dashboard visar statistik över ansökningar till YH-kurser för 2025. 
-            Denna dashboard syftar till att vara ett verktyg för intressenter inom yrkeshögskola
-            att läsa av KPIer för olika utbildningsanordnare. 
-            För utbildningsanordnare skulle man exempelvis kunna se vad konkurrenterna ansökt 
-            och ta inspiration från dem.
-            """, 
-            mode="md"
-        )
-        
-        # Subtitle and explanation
-        tgb.text("## Statistik för Sverige", mode="md")
-        tgb.text(
-            """
-            Nedan syns KPIer och information för hela ansökningsomgången för hela Sverige. 
-            Detta innebär samtliga kommuner, utbildningsområden och utbildningsanordnare
-            i landet.
-            """, 
-            mode="md"
-        )
-        
-        # Statistics cards
-        with tgb.layout(columns="1 1 1"):
-            with tgb.part(class_name="stat-card"):
-                tgb.text("#### Ansökta kurser", mode="md")
-                tgb.text(f"**{total}**", mode="md")
-            
-            with tgb.part(class_name="stat-card"):
-                tgb.text("#### Beviljade", mode="md")
-                tgb.text(f"**{approved}**", mode="md")
-            
-            with tgb.part(class_name="stat-card"):
-                tgb.text("#### Beviljandegrad", mode="md")
-                tgb.text(f"**{approval_rate}%**", mode="md")
+    # National stats (static)
+    tgb.text("## Statistik för Sverige", mode="md")
+    with tgb.layout(columns="1 1 1"):
+        with tgb.part(class_name="stat-card"):
+            tgb.text("#### Ansökta kurser", mode="md")
+            tgb.text("**{national_total_courses}**", mode="md")
+        with tgb.part(class_name="stat-card"):
+            tgb.text("#### Beviljade", mode="md")
+            tgb.text("**{national_approved_courses}**", mode="md")
+        with tgb.part(class_name="stat-card"):
+            tgb.text("#### Beviljandegrad", mode="md")
+            tgb.text("**{national_approval_rate_str}**", mode="md")
 
-        with tgb.layout(columns="2 1"):
-            with tgb.part(class_name="card"):
-                tgb.text(
-                    "## Antalet ansökta och beviljade YH kurser per utbildningsområde i {selected_county}",
-                    class_name="title-chart",
-                    mode="md",
-                )
-                tgb.chart(figure="{county_chart}")
+    with tgb.layout(columns="1 1"):
+        with tgb.part(class_name="stat-card"):
+            tgb.text("#### Ansökta platser (Sverige)", mode="md")
+            tgb.text("**{national_requested_places}**", mode="md")
+        with tgb.part(class_name="stat-card"):
+            tgb.text("#### Beviljade platser (Sverige)", mode="md")
+            tgb.text("**{national_approved_places}**", mode="md")
 
-            with tgb.part(class_name="card left-margin-md"):
-                tgb.text("## Filtrera data", mode="md")
-                #tgb.text("Filtrera antalet kommuner", mode="md")
+    # County section
+    tgb.text("# Ansökningsomgång per Län", mode="md")
+    tgb.selector("{selected_county}", lov=all_counties, dropdown=True, on_change=on_county_change)
 
-                tgb.text("Välj Län", mode="md")
-                tgb.selector(
-                    "{selected_county}",
-                    lov=df["Län"].unique(),
-                    dropdown=True,
-                    on_change=filter_data
-                )
+    with tgb.layout(columns="1 1 1"):
+        with tgb.part(class_name="stat-card"):
+            tgb.text("#### Ansökta kurser", mode="md")
+            tgb.text("**{total_courses}**", mode="md")
+        with tgb.part(class_name="stat-card"):
+            tgb.text("#### Beviljade", mode="md")
+            tgb.text("**{approved_courses}**", mode="md")
+        with tgb.part(class_name="stat-card"):
+            tgb.text("#### Beviljandegrad", mode="md")
+            tgb.text("**{approval_rate_str}**", mode="md")
 
-                # TODO this part does not get updated after filtering
-                with tgb.part(class_name="stats-container"):  # New container for stats
-                    with tgb.part(class_name="stat-card"):
-                        tgb.text("#### Ansökta kurser", mode="md")
-                        tgb.text(f"**{df_stats['Ansökta Kurser']}**", mode="md")
+    with tgb.layout(columns="1 1"):
+        with tgb.part(class_name="stat-card"):
+            tgb.text("#### Ansökta platser", mode="md")
+            tgb.text("**{requested_places}**", mode="md")
+        with tgb.part(class_name="stat-card"):
+            tgb.text("#### Beviljade platser", mode="md")
+            tgb.text("**{approved_places}**", mode="md")
 
-                    with tgb.part(class_name="stat-card"):
-                        tgb.text("#### Beviljade", mode="md")
-                        tgb.text(f"**{df_stats['Beviljade']}**", mode="md")
+    tgb.text("Valt län: {selected_county}", mode="md")
+    tgb.table("{df_selected_county}")
 
-                    with tgb.part(class_name="stat-card"):
-                        tgb.text("#### Beviljandegrad", mode="md")
-                        tgb.text(f"**{df_stats['Beviljandegrad (%)']}%**", mode="md")
-
-        with tgb.part(class_name="card"):
-            tgb.text("Raw data")
-            tgb.table("{df_county}")
-
-# Run the app
-if __name__ == "__main__":
-    Gui(page, css_file="assets/main.css").run(dark_mode=False, use_reloader=False, port=8080)
+Gui(page).run(
+    port=8080,
+    dark_mode=False,
+    use_reloader=False,
+    data={
+        "df": df,
+        "all_counties": all_counties,
+        "selected_county": selected_county,
+        "df_selected_county": df_selected_county,
+        "summary": summary,
+        "stats": stats,
+        "total_courses": total_courses,
+        "approved_courses": approved_courses,
+        "approval_rate_str": approval_rate_str,
+        "requested_places": requested_places,
+        "approved_places": approved_places,
+        # national (static)
+        **nat,
+    },
+)
