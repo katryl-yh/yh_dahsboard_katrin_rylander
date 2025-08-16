@@ -129,25 +129,47 @@ approved_courses = int(stats["Beviljade"])
 approval_rate_str = f"{stats['Beviljandegrad (%)']:.1f}%"
 
 def on_county_change(state, var_name=None, var_value=None):
-    # Update selection
+    # Update and validate selection
     if var_name == "selected_county" and var_value is not None:
         state.selected_county = str(var_value).strip()
-    county = (state.selected_county or "").strip()
 
-    # Recompute filtered df and KPIs (reactive)
-    state.df_selected_county = state.df[state.df["Län"].astype(str).str.strip() == county].copy()
-    state.summary, state.stats = get_statistics(state.df_selected_county, county)
-    # Update bindable KPI scalars
-    state.total_courses = int(state.stats["Ansökta Kurser"])
-    state.approved_courses = int(state.stats["Beviljade"])
-    state.approval_rate_str = f"{state.stats['Beviljandegrad (%)']:.1f}%"
+    county = (state.selected_county or "").strip()
+    if county not in state.all_counties:
+        # Fallback to first available county to avoid empty stats on bad value
+        county = state.all_counties[0]
+        state.selected_county = county
+    # NOTE: If lov comes directly from the DataFrame, users can only pick values in that list. 
+    # However, keeping the guard is still useful for edge cases, 
+    # example: The DataFrame is recomputed/reloaded and the current selection becomes invalid.
+    
+    # Recompute filtered df and KPIs
+    try:
+        state.df_selected_county = state.df[state.df["Län"].astype(str).str.strip() == county].copy()
+        _validate_df(state.df_selected_county, f"filtered county='{county}'")
+        state.summary, state.stats = get_statistics(state.df_selected_county, county)
+        state.total_courses = int(state.stats["Ansökta Kurser"])
+        state.approved_courses = int(state.stats["Beviljade"])
+        state.approval_rate_str = f"{state.stats['Beviljandegrad (%)']:.1f}%"
+    except Exception as e:
+        # Handle unexpected issues
+        state.df_selected_county = pd.DataFrame()
+        state.summary = pd.DataFrame()
+        state.stats = {"Län": county, "Ansökta Kurser": 0, "Beviljade": 0, "Avslag": 0, "Beviljandegrad (%)": 0.0}
+        state.total_courses = 0
+        state.approved_courses = 0
+        state.approval_rate_str = "0.0%"
 
     # Refresh only reactive vars (national KPIs are static and not refreshed)
-    # Refresh one var per call 
-    state.refresh("df_selected_county")
-    state.refresh("total_courses")
-    state.refresh("approved_courses")
-    state.refresh("approval_rate_str")
+    _safe_refresh(
+        state,
+        "df_selected_county",
+        "summary",
+        "stats",
+        "total_courses",
+        "approved_courses",
+        "approval_rate_str",
+        "selected_county",
+    )
 
 # Builder page
 with tgb.Page() as page:
