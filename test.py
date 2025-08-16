@@ -228,12 +228,20 @@ _validate_df(df, "input Excel")
 # Enrich base df with 'Sökt antal platser*' columns once at startup
 df = enrich_base_data(df, suffix=" (ansökningar)")
 
+def _sum_col_numeric(d: pd.DataFrame, col: str) -> int:
+    if col in d.columns:
+        return int(pd.to_numeric(d[col], errors="coerce").sum(skipna=True))
+    return 0
+
 # ----- National statistics (static) -----
 decisions = df["Beslut"].value_counts()
 national_total_courses = int(len(df))
 national_approved_courses = int(decisions.get("Beviljad", 0))
 national_approval_rate_str = f"{(national_approved_courses / national_total_courses * 100):.1f}%" if national_total_courses else "0%"
 
+
+national_requested_places = _sum_col_numeric(df, "Totalt antal sökta platser")
+national_approved_places = _sum_col_numeric(df, "Totalt antal beviljade platser")
 # ----- Initial county state (reactive) -----
 all_counties = sorted(df["Län"].dropna().unique().tolist())
 selected_county = "Stockholm"
@@ -310,8 +318,15 @@ with tgb.Page() as page:
         with tgb.part(class_name="stat-card"):
             tgb.text("#### Beviljandegrad", mode="md")
             tgb.text("**{national_approval_rate_str}**", mode="md")
+    with tgb.layout(columns="1 1 1"):
+        with tgb.part(class_name="stat-card"):
+            tgb.text("#### Ansökta platser (Sverige)", mode="md")
+            tgb.text("**{national_requested_places}**", mode="md")
+        with tgb.part(class_name="stat-card"):
+            tgb.text("#### Beviljade platser (Sverige)", mode="md")
+            tgb.text("**{national_approved_places}**", mode="md")
 
-    tgb.text("# Course Applications by County", mode="md")
+    tgb.text("#Ansökningsomgång per Län", mode="md")
     tgb.selector(
         "{selected_county}", # Bind with braces
         lov=all_counties,
@@ -359,11 +374,14 @@ Gui(page).run(
         "total_courses": total_courses,
         "approved_courses": approved_courses,
         "approval_rate_str": approval_rate_str,
+        "requested_places": requested_places,
+        "approved_places": approved_places,
         # national (static)
         "national_total_courses": national_total_courses,
         "national_approved_courses": national_approved_courses,
         "national_approval_rate_str": national_approval_rate_str,
-        "requested_places": requested_places,
-        "approved_places": approved_places,
+        "national_requested_places": national_requested_places,   
+        "national_approved_places": national_approved_places,     
+        
     },
 )
