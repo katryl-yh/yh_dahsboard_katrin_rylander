@@ -138,44 +138,44 @@ def on_county_change(state, var_name=None, var_value=None):
     if var_name != "selected_county":
         return
 
-    # Normalize incoming value and ignore invalid selections
-    new = (str(var_value).strip() if var_value is not None else "")
-    if not new or new == state.selected_county:
+    # Normalize selection; prefer event payload to avoid pre-update ambiguity
+    selected = (str(var_value).strip() if var_value is not None else str(state.selected_county or "").strip())
+    if not selected:
         return
-    if new not in state.all_counties:
+    if hasattr(state, "all_counties") and selected not in state.all_counties:
         return
 
-    # Update selection
-    state.selected_county = new
+    # Persist selection (safe even if Taipy already updated it)
+    state.selected_county = selected
     
     try:
-        # Filter and compute stats on pre-filtered df; set label explicitly
-        state.df_selected_county = state.df[state.df["Län"].astype(str).str.strip() == new].copy()
-        state.summary, state.stats = get_statistics(state.df_selected_county, county=None, label=new)
+        # Recompute filtered data and KPIs
+        state.df_selected_county = state.df[state.df["Län"].astype(str).str.strip() == selected].copy()
+        state.summary, state.stats = get_statistics(state.df_selected_county, county=None, label=selected)
         state.total_courses = int(state.stats["Ansökta Kurser"])
         state.approved_courses = int(state.stats["Beviljade"])
         state.approval_rate_str = f"{state.stats['Beviljandegrad (%)']:.1f}%"
     except Exception as e:
-        logging.warning("on_county_change failed for '%s': %s", new, e)
+        logging.warning("on_county_change failed for '%s': %s", selected, e)
         state.df_selected_county = pd.DataFrame()
         state.summary = pd.DataFrame()
-        state.stats = {"Län": new, "Ansökta Kurser": 0, "Beviljade": 0, "Avslag": 0, "Beviljandegrad (%)": 0.0}
+        state.stats = {"Län": selected, "Ansökta Kurser": 0, "Beviljade": 0, "Avslag": 0, "Beviljandegrad (%)": 0.0}
         state.total_courses = 0
         state.approved_courses = 0
         state.approval_rate_str = "0.0%"
 
-    # Refresh only reactive vars (national KPIs are static and not refreshed)
+    # Refresh reactive vars (one per call)
     _safe_refresh(
         state,
+        "selected_county",
         "df_selected_county",
         "summary",
         "stats",
         "total_courses",
         "approved_courses",
         "approval_rate_str",
-        "selected_county",
     )
-
+    
 # Builder page
 with tgb.Page() as page:
     # National stats (static)
