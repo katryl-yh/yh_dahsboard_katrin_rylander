@@ -17,7 +17,7 @@ def _safe_refresh(state, *var_names):
         for v in var_names:
             try:
                 state.refresh(v)
-            except Exception:
+            except Exception as e:
                 logging.warning("refresh(%s) failed: %s", v, e)
 
 def _validate_df(df: pd.DataFrame, where: str = "dataframe"):
@@ -31,8 +31,14 @@ def _read_data_or_exit(path: Path, sheet: str) -> pd.DataFrame:
     except FileNotFoundError:
         print(f"Error: File not found: {path}", file=sys.stderr)
         sys.exit(1)
+    except ImportError as e:
+        print(f"Error: {e}. Try: pip install openpyxl", file=sys.stderr)
+        sys.exit(1)
     except ValueError as e:
         print(f"Error: {e} (sheet='{sheet}')", file=sys.stderr)
+        sys.exit(1)
+    except Exception as e:
+        print(f"Unexpected error reading Excel: {e}", file=sys.stderr)
         sys.exit(1)
     return df_
 
@@ -109,8 +115,6 @@ def get_statistics(df_or_filtered: pd.DataFrame, county: str | None = None, labe
     summary = summary.sort_values("Ansökta utbildningar", ascending=True)
     return summary, stats
 
-# Normalize county names
-df["Län"] = df["Län"].astype(str).str.strip()
 
 # ----- National statistics (static) -----
 decisions = df["Beslut"].value_counts()
