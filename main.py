@@ -9,6 +9,8 @@ from backend.data_processing import (
     compute_national_stats,
 )
 
+from frontend.charts import education_area_chart
+
 logging.basicConfig(level=logging.WARNING)
 
 def _safe_refresh(state, *var_names):
@@ -42,6 +44,8 @@ approved_courses = int(stats["Beviljade"])
 approval_rate_str = f"{stats['Beviljandegrad (%)']:.1f}%"
 requested_places = int(stats.get("Ansökta platser", 0))
 approved_places = int(stats.get("Beviljade platser", 0))
+# initial chart for selected county
+county_chart = education_area_chart(summary, selected_county)
 
 def on_county_change(state, var_name=None, var_value=None):
     if var_name != "selected_county":
@@ -59,6 +63,7 @@ def on_county_change(state, var_name=None, var_value=None):
         state.approval_rate_str = f"{state.stats['Beviljandegrad (%)']:.1f}%"
         state.requested_places = int(state.stats.get("Ansökta platser", 0))
         state.approved_places = int(state.stats.get("Beviljade platser", 0))
+        state.county_chart = education_area_chart(state.summary, state.selected_county)
     except Exception as e:
         logging.warning("on_county_change failed for '%s': %s", selected, e)
         state.df_selected_county = pd.DataFrame()
@@ -69,6 +74,7 @@ def on_county_change(state, var_name=None, var_value=None):
         state.approval_rate_str = "0.0%"
         state.requested_places = 0
         state.approved_places = 0
+        state.county_chart = education_area_chart(state.summary, state.selected_county)
 
     _safe_refresh(
         state,
@@ -81,12 +87,23 @@ def on_county_change(state, var_name=None, var_value=None):
         "approval_rate_str",
         "requested_places",
         "approved_places",
+        "county_chart",
     )
 
 # UI
 with tgb.Page() as page:
+    tgb.text("# YH 2025 - ansökningsomgång för kurser", mode="md")
+    tgb.text(
+        "Denna dashboard syftar till att vara ett verktyg för intressenter inom yrkeshögskola att läsa av KPIer för olika utbildningsanordnare.  \n"
+        "För utbildningsanordnare skulle man exempelvis kunna se vad konkurrenterna ansökt och ta inspiration från dem.",
+        mode="md",
+    )
     # National stats (static)
-    tgb.text("# Statistik för Sverige", mode="md")
+    tgb.text("## Statistik för Sverige", mode="md")
+    tgb.text(
+        "Nedan syns KPIer och information för hela ansökningsomgången för hela Sverige.  \n"
+        "Detta innebär samtliga kommuner, utbildningsområden och utbildningsanordnare i landet.", 
+        mode="md")
     with tgb.layout(columns="1 1 1"):
         with tgb.part(class_name="stat-card"):
             tgb.text("#### Ansökta kurser", mode="md")
@@ -129,6 +146,9 @@ with tgb.Page() as page:
             tgb.text("#### Beviljade platser", mode="md")
             tgb.text("**{approved_places}**", mode="md")
 
+    with tgb.layout(columns="1"):
+        tgb.chart(figure="{county_chart}", type="plotly")
+
     tgb.text("Valt län: {selected_county}", mode="md")
     tgb.table("{df_selected_county}")
 
@@ -148,6 +168,7 @@ Gui(page).run(
         "approval_rate_str": approval_rate_str,
         "requested_places": requested_places,
         "approved_places": approved_places,
+        "county_chart": county_chart,
         # national (static) — pass explicitly instead of **nat
         "national_total_courses": national_total_courses,
         "national_approved_courses": national_approved_courses,
