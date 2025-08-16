@@ -74,6 +74,24 @@ def get_statistics(df_or_filtered: pd.DataFrame, county: str | None = None, labe
         "Beviljandegrad (%)": approval_rate,
     }
 
+    # aggregate places
+    req_col = "Totalt antal sökta platser"
+    appr_col = "Totalt antal beviljade platser"
+
+    def _safe_sum(df: pd.DataFrame, col: str) -> int:
+        if col in df.columns:
+            return int(pd.to_numeric(df[col], errors="coerce").sum(skipna=True))
+        return 0
+
+    stats["Ansökta platser"] = _safe_sum(scope_df, req_col)
+    stats["Beviljade platser"] = _safe_sum(scope_df, appr_col)
+
+    if scope_df.empty:
+        summary = pd.DataFrame(columns=[
+            "Utbildningsområde", "Ansökta utbildningar", "Beviljade utbildningar", "Beviljandegrad"
+        ])
+        return summary, stats
+
     if scope_df.empty:
         summary = pd.DataFrame(columns=[
             "Utbildningsområde", "Ansökta utbildningar", "Beviljade utbildningar", "Beviljandegrad"
@@ -226,6 +244,8 @@ summary, stats = get_statistics(df_selected_county, county=None, label=selected_
 total_courses = int(stats["Ansökta Kurser"])
 approved_courses = int(stats["Beviljade"])
 approval_rate_str = f"{stats['Beviljandegrad (%)']:.1f}%"
+requested_places = int(stats.get("Ansökta platser", 0))
+approved_places = int(stats.get("Beviljade platser", 0))
 
 def on_county_change(state, var_name=None, var_value=None):
     # Only handle the intended variable
@@ -249,6 +269,8 @@ def on_county_change(state, var_name=None, var_value=None):
         state.total_courses = int(state.stats["Ansökta Kurser"])
         state.approved_courses = int(state.stats["Beviljade"])
         state.approval_rate_str = f"{state.stats['Beviljandegrad (%)']:.1f}%"
+        state.requested_places = int(state.stats.get("Ansökta platser", 0))
+        state.approved_places = int(state.stats.get("Beviljade platser", 0))
     except Exception as e:
         logging.warning("on_county_change failed for '%s': %s", selected, e)
         state.df_selected_county = pd.DataFrame()
@@ -257,6 +279,8 @@ def on_county_change(state, var_name=None, var_value=None):
         state.total_courses = 0
         state.approved_courses = 0
         state.approval_rate_str = "0.0%"
+        state.requested_places = 0
+        state.approved_places = 0
 
     # Refresh reactive vars (one per call)
     _safe_refresh(
@@ -268,6 +292,8 @@ def on_county_change(state, var_name=None, var_value=None):
         "total_courses",
         "approved_courses",
         "approval_rate_str",
+        "requested_places",
+        "approved_places",
     )
 
 # Builder page
@@ -307,6 +333,14 @@ with tgb.Page() as page:
             tgb.text("#### Beviljandegrad", mode="md")
             tgb.text("**{approval_rate_str}**", mode="md")
 
+    with tgb.layout(columns="1 1 1"):
+        with tgb.part(class_name="stat-card"):
+            tgb.text("#### Ansökta platser", mode="md")
+            tgb.text("**{requested_places}**", mode="md")
+        with tgb.part(class_name="stat-card"):
+            tgb.text("#### Beviljade platser", mode="md")
+            tgb.text("**{approved_places}**", mode="md")
+
     # Show current selection
     tgb.text("Valt län: {selected_county}", mode="md")
     tgb.table("{df_selected_county}")
@@ -329,5 +363,7 @@ Gui(page).run(
         "national_total_courses": national_total_courses,
         "national_approved_courses": national_approved_courses,
         "national_approval_rate_str": national_approval_rate_str,
+        "requested_places": requested_places,
+        "approved_places": approved_places,
     },
 )
