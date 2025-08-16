@@ -23,6 +23,13 @@ def _safe_refresh(state, *var_names):
 df = load_base_df()
 nat = compute_national_stats(df)
 
+# EXPLICITLY expose national KPIs as module-level vars
+national_total_courses = nat.get("national_total_courses", 0)
+national_approved_courses = nat.get("national_approved_courses", 0)
+national_approval_rate_str = nat.get("national_approval_rate_str", "0%")
+national_requested_places = nat.get("national_requested_places", 0)
+national_approved_places = nat.get("national_approved_places", 0)
+
 # Initial county state
 all_counties = sorted(df["Län"].dropna().unique().tolist())
 selected_county = all_counties[0] if all_counties else ""
@@ -79,7 +86,7 @@ def on_county_change(state, var_name=None, var_value=None):
 # UI
 with tgb.Page() as page:
     # National stats (static)
-    tgb.text("## Statistik för Sverige", mode="md")
+    tgb.text("# Statistik för Sverige", mode="md")
     with tgb.layout(columns="1 1 1"):
         with tgb.part(class_name="stat-card"):
             tgb.text("#### Ansökta kurser", mode="md")
@@ -100,7 +107,7 @@ with tgb.Page() as page:
             tgb.text("**{national_approved_places}**", mode="md")
 
     # County section
-    tgb.text("# Ansökningsomgång per Län", mode="md")
+    tgb.text("## Ansökningsomgång per Län", mode="md")
     tgb.selector("{selected_county}", lov=all_counties, dropdown=True, on_change=on_county_change)
 
     with tgb.layout(columns="1 1 1"):
@@ -141,7 +148,11 @@ Gui(page).run(
         "approval_rate_str": approval_rate_str,
         "requested_places": requested_places,
         "approved_places": approved_places,
-        # national (static)
-        **nat,
+        # national (static) — pass explicitly instead of **nat
+        "national_total_courses": national_total_courses,
+        "national_approved_courses": national_approved_courses,
+        "national_approval_rate_str": national_approval_rate_str,
+        "national_requested_places": national_requested_places,
+        "national_approved_places": national_approved_places,
     },
 )
