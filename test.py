@@ -42,14 +42,6 @@ def _read_data_or_exit(path: Path, sheet: str) -> pd.DataFrame:
         sys.exit(1)
     return df_
 
-# Load data (with error handling)
-df = _read_data_or_exit(
-    DATA_DIRECTORY / "resultat-2025-for-kurser-inom-yh.xlsx",
-    sheet="Lista ansökningar",
-)
-# Normalize and validate
-df["Län"] = df["Län"].astype(str).str.strip()
-_validate_df(df, "input Excel")
 
 def get_statistics(df_or_filtered: pd.DataFrame, county: str | None = None, label: str | None = None):
     """
@@ -115,6 +107,92 @@ def get_statistics(df_or_filtered: pd.DataFrame, county: str | None = None, labe
     summary = summary.sort_values("Ansökta utbildningar", ascending=True)
     return summary, stats
 
+def enrich_base_data(
+    df_base: pd.DataFrame,
+    apps_filename: str = "inkomna-ansokningar-2025-for-kurser.xlsx",
+    sheet: str = "Lista ansökningar",
+    key_col: str = "Diarienummer",
+    prefix: str = "Sökt antal platser",
+    suffix: str = "",
+) -> pd.DataFrame:
+    """
+    Enrich df_base with columns starting with `prefix` from the applications Excel.
+    Reuses _read_data_or_exit to load the sheet and left-joins on `key_col`.
+    """
+    if df_base is None or df_base.empty:
+        return df_base
+
+    # Read applications sheet (reuses existing robust reader)
+    try:
+        apps = _read_data_or_exit(DATA_DIRECTORY / apps_filename, sheet=sheet)
+    except SystemExit:
+        # _read_data_or_exit already logged the error and exited; keep base unchanged if caught
+        return df_base
+
+    if key_col not in df_base.columns:
+        logging.warning("Base df missing key column '%s'; enrichment skipped.", key_col)
+        return df_base
+    if key_col not in apps.columns:
+        logging.warning("Applications sheet missing key column '%s'; enrichment skipped.", key_col)
+        return df_base
+
+    # Normalize key on both sides
+    base = df_base.copy()
+    base[key_col] = base[key_col].astype(str).str.strip()
+
+    apps = apps.copy()
+    apps[key_col] = apps[key_col].astype(str).str.strip()
+
+    # Select key + columns that start with the prefix (case-insensitive, trimmed)
+    wanted = [key_col] + [
+        c for c in apps.columns
+        if c != key_col and c.strip().casefold().startswith(prefix.casefold())
+    ]
+    if len(wanted) == 1:
+        logging.warning("No columns starting with '%s' found in '%s' (%s).", prefix, apps_filename, sheet)
+        return df_base
+
+    apps_sel = apps[wanted].copy()
+
+    # Best-effort numeric conversion for sought-place columns (no deprecated errors="ignore")
+    for c in wanted:
+        if c == key_col:
+            continue
+        try:
+            apps_sel[c] = pd.to_numeric(apps_sel[c])
+        except (ValueError, TypeError):
+            # Leave column as-is if it contains non-numeric values
+            pass
+
+    # Deduplicate by key (keep last)
+    apps_sel = apps_sel.drop_duplicates(subset=[key_col], keep="last")
+
+    # Avoid name collisions by optional suffix
+    if suffix:
+        rename_map = {c: f"{c}{suffix}" for c in apps_sel.columns if c != key_col and c in base.columns}
+        if rename_map:
+            apps_sel = apps_sel.rename(columns=rename_map)
+
+    # Merge (many-to-one validated)
+    try:
+        merged = base.merge(apps_sel, on=key_col, how="left", validate="m:1")
+    except Exception as e:
+        logging.warning("Validated merge failed: %s. Falling back to plain left join.", e)
+        merged = base.merge(apps_sel, on=key_col, how="left")
+
+    return merged
+
+# Load data (with error handling)
+df = _read_data_or_exit(
+    DATA_DIRECTORY / "resultat-2025-for-kurser-inom-yh.xlsx",
+    sheet="Lista ansökningar",
+)
+# Normalize and validate
+df["Län"] = df["Län"].astype(str).str.strip()
+_validate_df(df, "input Excel")
+
+# Enrich base df with 'Sökt antal platser*' columns once at startup
+df = enrich_base_data(df, suffix=" (ansökningar)")
 
 # ----- National statistics (static) -----
 decisions = df["Beslut"].value_counts()
@@ -175,7 +253,7 @@ def on_county_change(state, var_name=None, var_value=None):
         "approved_courses",
         "approval_rate_str",
     )
-    
+
 # Builder page
 with tgb.Page() as page:
     # National stats (static)
