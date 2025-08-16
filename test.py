@@ -2,15 +2,45 @@ import pandas as pd
 from taipy.gui import Gui
 import taipy.gui.builder as tgb
 from pathlib import Path
+import sys
+
+REQUIRED_COLUMNS = {"Län", "Beslut", "Utbildningsområde"}
 
 DATA_DIRECTORY = Path(__file__).parent / "data" / "resultat_kurser"
 
-# Load data
-df = pd.read_excel(
+def _safe_refresh(state, *var_names):
+    # Taipy 4.x: one var per call; guard for API changes
+    if hasattr(state, "refresh"):
+        for v in var_names:
+            try:
+                state.refresh(v)
+            except Exception:
+                pass
+
+def _validate_df(df: pd.DataFrame, where: str = "dataframe"):
+    missing = REQUIRED_COLUMNS - set(df.columns)
+    if missing:
+        raise ValueError(f"Missing columns in {where}: {sorted(missing)}")
+
+def _read_data_or_exit(path: Path, sheet: str) -> pd.DataFrame:
+    try:
+        df_ = pd.read_excel(path, sheet_name=sheet, engine="openpyxl")
+    except FileNotFoundError:
+        print(f"Error: File not found: {path}", file=sys.stderr)
+        sys.exit(1)
+    except ValueError as e:
+        print(f"Error: {e} (sheet='{sheet}')", file=sys.stderr)
+        sys.exit(1)
+    return df_
+
+# Load data (with error handling)
+df = _read_data_or_exit(
     DATA_DIRECTORY / "resultat-2025-for-kurser-inom-yh.xlsx",
-    sheet_name="Lista ansökningar",
-    engine="openpyxl",
+    sheet="Lista ansökningar",
 )
+# Normalize and validate
+df["Län"] = df["Län"].astype(str).str.strip()
+_validate_df(df, "input Excel")
 
 def get_statistics(df_or_filtered: pd.DataFrame, county: str | None = None):
     """
