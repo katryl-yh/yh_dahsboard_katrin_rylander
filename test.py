@@ -118,6 +118,7 @@ def enrich_base_data(
     """
     Enrich df_base with columns starting with `prefix` from the applications Excel.
     Reuses _read_data_or_exit to load the sheet and left-joins on `key_col`.
+    Also adds 'Totalt antal sökta platser' as the row-wise sum of all 'Sökt antal platser*' columns.
     """
     if df_base is None or df_base.empty:
         return df_base
@@ -154,24 +155,39 @@ def enrich_base_data(
 
     apps_sel = apps[wanted].copy()
 
-    # Best-effort numeric conversion for sought-place columns (no deprecated errors="ignore")
+    # Try full-column numeric conversion (no deprecated errors='ignore')
     for c in wanted:
         if c == key_col:
             continue
         try:
             apps_sel[c] = pd.to_numeric(apps_sel[c])
         except (ValueError, TypeError):
-            # Leave column as-is if it contains non-numeric values
+            # Leave as-is if non-numeric values present
             pass
+
+    # Compute total sought places across all Sökt-antal columns
+    sum_source_cols = [c for c in apps_sel.columns if c != key_col]
+    numeric_block = apps_sel[sum_source_cols].apply(lambda s: pd.to_numeric(s, errors="coerce"))
+    apps_sel["Totalt antal sökta platser"] = (
+        numeric_block.sum(axis=1, min_count=1).fillna(0).astype(int)
+    )
 
     # Deduplicate by key (keep last)
     apps_sel = apps_sel.drop_duplicates(subset=[key_col], keep="last")
 
-    # Avoid name collisions by optional suffix
+    # Avoid name collisions by optional suffix (applies to all incoming columns incl. total)
+    incoming_cols = [c for c in apps_sel.columns if c != key_col]
     if suffix:
-        rename_map = {c: f"{c}{suffix}" for c in apps_sel.columns if c != key_col and c in base.columns}
+        rename_map = {c: f"{c}{suffix}" for c in incoming_cols if c in base.columns}
         if rename_map:
             apps_sel = apps_sel.rename(columns=rename_map)
+    else:
+        collisions = [c for c in incoming_cols if c in base.columns]
+        if collisions:
+            logging.warning(
+                "Incoming columns collide with base: %s. Pandas will suffix duplicate names.",
+                collisions,
+            )
 
     # Merge (many-to-one validated)
     try:
