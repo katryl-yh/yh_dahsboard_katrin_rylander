@@ -106,22 +106,23 @@ with tgb.Page() as page:
         mode="md")
     with tgb.layout(columns="1 1 1"):
         with tgb.part(class_name="stat-card"):
+            tgb.text("#### Beviljade kurser", mode="md")
+            tgb.text("**{national_approved_courses}**", mode="md")
+        with tgb.part(class_name="stat-card"):
             tgb.text("#### Ansökta kurser", mode="md")
             tgb.text("**{national_total_courses}**", mode="md")
-        with tgb.part(class_name="stat-card"):
-            tgb.text("#### Beviljade", mode="md")
-            tgb.text("**{national_approved_courses}**", mode="md")
         with tgb.part(class_name="stat-card"):
             tgb.text("#### Beviljandegrad", mode="md")
             tgb.text("**{national_approval_rate_str}**", mode="md")
 
-    with tgb.layout(columns="1 1"):
+    with tgb.layout(columns="1 1 1"):
         with tgb.part(class_name="stat-card"):
-            tgb.text("#### Ansökta platser (Sverige)", mode="md")
-            tgb.text("**{national_requested_places}**", mode="md")
-        with tgb.part(class_name="stat-card"):
-            tgb.text("#### Beviljade platser (Sverige)", mode="md")
+            tgb.text("#### Beviljade platser", mode="md")
             tgb.text("**{national_approved_places}**", mode="md")
+        with tgb.part(class_name="stat-card"):
+            tgb.text("#### Ansökta platser", mode="md")
+            tgb.text("**{national_requested_places}**", mode="md")
+
 
     # County section
     tgb.text("## Ansökningsomgång per Län", mode="md")
@@ -129,22 +130,23 @@ with tgb.Page() as page:
 
     with tgb.layout(columns="1 1 1"):
         with tgb.part(class_name="stat-card"):
-            tgb.text("#### Ansökta kurser", mode="md")
-            tgb.text("**{total_courses}**", mode="md")
-        with tgb.part(class_name="stat-card"):
             tgb.text("#### Beviljade", mode="md")
             tgb.text("**{approved_courses}**", mode="md")
+        with tgb.part(class_name="stat-card"):
+            tgb.text("#### Ansökta kurser", mode="md")
+            tgb.text("**{total_courses}**", mode="md")
         with tgb.part(class_name="stat-card"):
             tgb.text("#### Beviljandegrad", mode="md")
             tgb.text("**{approval_rate_str}**", mode="md")
 
-    with tgb.layout(columns="1 1"):
-        with tgb.part(class_name="stat-card"):
-            tgb.text("#### Ansökta platser", mode="md")
-            tgb.text("**{requested_places}**", mode="md")
+    with tgb.layout(columns="1 1 1"):
         with tgb.part(class_name="stat-card"):
             tgb.text("#### Beviljade platser", mode="md")
             tgb.text("**{approved_places}**", mode="md")
+        with tgb.part(class_name="stat-card"):
+            tgb.text("#### Ansökta platser", mode="md")
+            tgb.text("**{requested_places}**", mode="md")
+
 
     with tgb.layout(columns="1"):
         tgb.chart(figure="{county_chart}", type="plotly")
