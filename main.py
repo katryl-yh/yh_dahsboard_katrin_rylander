@@ -11,7 +11,11 @@ from backend.data_processing import (
 )
 
 from frontend.maps import build_sweden_map
-from frontend.charts import education_area_chart, provider_education_area_chart
+from frontend.charts import (
+    education_area_chart, 
+    provider_education_area_chart,
+    county_credits_histogram    
+)
 
 logging.basicConfig(level=logging.WARNING)
 
@@ -88,6 +92,18 @@ county_chart = education_area_chart(
     title_size=CHART_TITLE_SIZE,
     legend_font_size=CHART_LEGEND_SIZE,
     label_font_size=CHART_LABEL_SIZE,
+    font_family=CHART_FONT_FAMILY,
+)
+
+# Initial histogram for selected county
+county_histogram = county_credits_histogram(
+    df,
+    selected_county,
+    nbinsx=20,
+    xtick_size=CHART_XTICK_SIZE,
+    ytick_size=CHART_YTICK_SIZE,
+    title_size=CHART_TITLE_SIZE,
+    legend_font_size=CHART_LEGEND_SIZE,
     font_family=CHART_FONT_FAMILY,
 )
 
@@ -230,6 +246,16 @@ def on_county_change(state, var_name=None, var_value=None):
             label_font_size=CHART_LABEL_SIZE,
             font_family=CHART_FONT_FAMILY,
         )
+        state.county_histogram = county_credits_histogram(
+            state.df,
+            state.selected_county,
+            nbinsx=20,
+            xtick_size=CHART_XTICK_SIZE,
+            ytick_size=CHART_YTICK_SIZE,
+            title_size=CHART_TITLE_SIZE,
+            legend_font_size=CHART_LEGEND_SIZE,
+            font_family=CHART_FONT_FAMILY,
+        )
     except Exception as e:
         logging.warning("on_county_change failed for '%s': %s", selected, e)
         state.df_selected_county = pd.DataFrame()
@@ -250,6 +276,16 @@ def on_county_change(state, var_name=None, var_value=None):
             label_font_size=CHART_LABEL_SIZE,
             font_family=CHART_FONT_FAMILY,
         )
+        state.county_histogram = county_credits_histogram(
+            state.df,
+            state.selected_county,
+            nbinsx=20,
+            xtick_size=CHART_XTICK_SIZE,
+            ytick_size=CHART_YTICK_SIZE,
+            title_size=CHART_TITLE_SIZE,
+            legend_font_size=CHART_LEGEND_SIZE,
+            font_family=CHART_FONT_FAMILY,
+        )
     _safe_refresh(
         state,
         "selected_county",
@@ -262,6 +298,7 @@ def on_county_change(state, var_name=None, var_value=None):
         "requested_places",
         "approved_places",
         "county_chart",
+        "county_histogram",
     )
 
 # UI
@@ -373,6 +410,9 @@ with tgb.Page() as page:
     tgb.text("Valt län: {selected_county}", mode="md")
     tgb.table("{df_selected_county}")
 
+    with tgb.layout(columns="1"):
+        tgb.chart(figure="{county_histogram}", type="plotly")
+
 Gui(page).run(
     port=8080,
     dark_mode=False,
@@ -391,6 +431,7 @@ Gui(page).run(
         "requested_places": requested_places,
         "approved_places": approved_places,
         "county_chart": county_chart,
+        "county_histogram": county_histogram,
         # national (static) — pass explicitly instead of **nat
         "sweden_map": sweden_map, 
         "sweden_bar_chart": sweden_bar_chart, 

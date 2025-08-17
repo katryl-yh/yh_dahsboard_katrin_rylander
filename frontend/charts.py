@@ -211,3 +211,112 @@ def provider_education_area_chart(
         automargin=True,
     )
     return fig
+
+def county_credits_histogram(
+    df: pd.DataFrame,
+    county: str,
+    *,
+    nbinsx: int = 20,
+    xtick_size: int = 11,
+    ytick_size: int = 12,
+    title_size: int = 18,
+    legend_font_size: int = 12,
+    font_family: str = "Arial",
+) -> go.Figure:
+    """
+    Stacked histogram of YH credits for approved (blue) and rejected (gray) courses in a county.
+    """
+    if df is None or not len(df):
+        return go.Figure()
+
+    # Filter and normalize
+    d = df.copy()
+    d["Län"] = d["Län"].astype(str).str.strip()
+    county = str(county).strip()
+    d = d[d["Län"] == county]
+
+    fig = go.Figure()
+    if d.empty:
+        fig.update_layout(
+            title=dict(text=f"Fördelning av YH-poäng i {county}", x=0.0, font=dict(size=title_size, family=font_family)),
+            plot_bgcolor="white",
+            paper_bgcolor="white",
+            height=500,
+            showlegend=True,
+        )
+        return fig
+
+    # Pick the credits column
+    credits_col = "YH-poäng" if "YH-poäng" in d.columns else ("Poäng" if "Poäng" in d.columns else None)
+    if credits_col is None:
+        fig.update_layout(
+            title=dict(text=f"Fördelning av YH-poäng i {county} (saknar kolumn för poäng)", x=0.0,
+                       font=dict(size=title_size, family=font_family)),
+            plot_bgcolor="white",
+            paper_bgcolor="white",
+            height=500,
+            showlegend=False,
+        )
+        return fig
+
+    approved = d[d["Beslut"] == "Beviljad"][credits_col].dropna()
+    rejected = d[d["Beslut"] == "Avslag"][credits_col].dropna()
+
+    total_courses = len(d)
+    approved_count = int(approved.shape[0])
+    approval_rate = (approved_count / total_courses * 100.0) if total_courses > 0 else 0.0
+
+    # Approved (base)
+    fig.add_trace(go.Histogram(
+        x=approved,
+        name="Beviljade",
+        nbinsx=nbinsx,
+        marker_color=BLUE_1,
+        opacity=1.0,
+        hovertemplate="YH-poäng: %{x}<br>Antal: %{y}<extra></extra>",
+    ))
+    # Rejected (stacked)
+    fig.add_trace(go.Histogram(
+        x=rejected,
+        name="Avslag",
+        nbinsx=nbinsx,
+        marker_color=GRAY_1,
+        opacity=1.0,
+        hovertemplate="YH-poäng: %{x}<br>Antal: %{y}<extra></extra>",
+    ))
+
+    fig.update_layout(
+        barmode="stack",
+        bargap=0.1,
+        height=500,
+        plot_bgcolor="white",
+        paper_bgcolor="white",
+        showlegend=True,
+        legend=dict(
+            orientation="h",
+            yanchor="bottom", y=1.02,
+            xanchor="right", x=1.0,
+            font=dict(size=legend_font_size, family=font_family),
+        ),
+        title=dict(
+            text=f"Fördelning av YH-poäng i {county}"
+                 f"<br><sup>Beviljandegrad: {approval_rate:.1f}% ({approved_count} av {total_courses} kurser)</sup>",
+            x=0.0,
+            font=dict(size=title_size, family=font_family),
+        ),
+        xaxis_title="YH-poäng",
+        yaxis_title="Antal kurser",
+        font=dict(family=font_family),
+    )
+    fig.update_xaxes(
+        showline=True, linecolor=GRAY_12,
+        tickfont=dict(size=xtick_size, color=GRAY_12, family=font_family),
+        zeroline=False,
+    )
+    fig.update_yaxes(
+        showline=True, linecolor=GRAY_12,
+        tickfont=dict(size=ytick_size, color=GRAY_12, family=font_family),
+        zeroline=False,
+        gridcolor="#eee",
+    )
+    return fig
