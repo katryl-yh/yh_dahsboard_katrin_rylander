@@ -1,7 +1,11 @@
 import logging
 import sys
 from pathlib import Path
-from typing import Tuple
+from typing import Tuple, Iterable
+import json
+import numpy as np
+import pandas as pd
+from difflib import get_close_matches
 
 import pandas as pd
 
@@ -208,3 +212,43 @@ def compute_national_stats(df: pd.DataFrame) -> dict:
         "national_requested_places": _sum_col_numeric(df, COL_TOTAL_SOKTA),
         "national_approved_places": _sum_col_numeric(df, COL_TOTAL_BEVILJADE_PLATSER),
     }
+
+def aggregate_approved_by_county(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Returns a DataFrame with columns ['Län','Beviljade'] sorted by Beviljade desc, Län asc.
+    """
+    return (
+        df.loc[df["Län"] != "Flera kommuner"]
+          .groupby("Län")["Beslut"]
+          .apply(lambda s: (s == "Beviljad").sum())
+          .astype("int64")
+          .reset_index(name="Beviljade")
+          .sort_values(["Beviljade", "Län"], ascending=[False, True])
+          .reset_index(drop=True)
+    )
+
+def load_region_geojson(geojson_path: str | Path) -> dict:
+    geojson_path = Path(geojson_path)
+    with open(geojson_path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+def build_region_code_map(geojson: dict) -> dict[str, str]:
+    """
+    Maps region 'name' -> länskod from the GeoJSON features.
+    """
+    features = geojson.get("features", []) or []
+    props = [feat.get("properties", {}) for feat in features]
+    return {p.get("name"): p.get("ref:se:länskod") for p in props if p.get("name")}
+
+def match_region_codes(
+    regions: Iterable[str], code_map: dict[str, str]
+) -> list[str | None]:
+    """
+    Fuzzy-match region names to länskod using difflib.get_close_matches.
+    """
+    matched: list[str | None] = []
+    keys = list(code_map.keys())
+    for region in regions:
+        hit = get_close_matches(region, keys, n=1)
+        matched.append(code_map[hit[0]] if hit else None)
+    return matched

@@ -9,6 +9,7 @@ from backend.data_processing import (
     compute_national_stats,
 )
 
+from frontend.maps import build_sweden_map
 from frontend.charts import education_area_chart
 
 logging.basicConfig(level=logging.WARNING)
@@ -24,130 +25,6 @@ def _safe_refresh(state, *var_names):
 # Load & prepare data
 df = load_base_df()
 nat = compute_national_stats(df)
-
-# ---------------------------------------------- map -------------
-import json
-import numpy as np
-import plotly.graph_objects as go
-from difflib import get_close_matches
-from pathlib import Path
-
-def build_sweden_map(
-    df: pd.DataFrame,
-    geojson_path: str | Path | None = None,
-    tick_mode: str = "log_equal",  # "log_equal" or "percentiles"
-    n_ticks: int = 6,
-) -> "go.Figure":
-    """
-    Build a static choropleth map of approved courses per county.
-
-    tick_mode:
-      - "log_equal": ticks evenly spaced in log1p space (labels are original counts)
-      - "percentiles": ticks at data percentiles (labels are original counts)
-    """
-    # Aggregate approved courses per county (Län)
-    df_regions = (
-        df.loc[df["Län"] != "Flera kommuner"]
-          .groupby("Län")["Beslut"]
-          .apply(lambda s: (s == "Beviljad").sum())
-          .astype("int64")
-          .reset_index(name="Beviljade")
-          .sort_values(["Beviljade", "Län"], ascending=[False, True])
-    )
-
-    # Resolve GeoJSON path relative to this file if not provided
-    if geojson_path is None:
-        geojson_path = Path(__file__).resolve().parent / "assets" / "swedish_regions.geojson"
-
-    with open(geojson_path, "r", encoding="utf-8") as f:
-        json_data = json.load(f)
-
-    # Map region names to län codes from GeoJSON
-    properties = [feat.get("properties", {}) for feat in json_data.get("features", [])]
-    region_codes = {p.get("name"): p.get("ref:se:länskod") for p in properties}
-
-    region_codes_map: list[str | None] = []
-    for region in df_regions["Län"]:
-        matches = get_close_matches(region, list(region_codes.keys()), n=1)
-        if matches:
-            region_codes_map.append(region_codes[matches[0]])
-        else:
-            logging.warning("No GeoJSON match found for region: %s", region)
-            region_codes_map.append(None)
-
-    # Color scale on log scale to reduce skew
-    beviljade = df_regions["Beviljade"].values
-    log_approved = np.log1p(beviljade)
-
-    # --- Tick strategies ---
-    def ticks_log_equal(vals: np.ndarray, n: int):
-        pos = vals[vals > 0]
-        if len(pos) == 0:
-            return np.array([0.0]), ["0"]
-        lo = np.log1p(pos.min())
-        hi = np.log1p(pos.max())
-        ticks_log = np.linspace(lo, hi, n)
-        labels = np.expm1(ticks_log)
-        labels = np.round(labels).astype(int)
-        # ensure uniqueness and >0
-        uniq = np.unique(labels)
-        return ticks_log[: len(uniq)], [str(v) for v in uniq]
-
-    def ticks_percentiles(vals: np.ndarray, n: int):
-        if len(vals) == 0:
-            return np.array([0.0]), ["0"]
-        qs = np.linspace(0, 100, n)
-        qv = np.percentile(vals, qs)
-        qv = np.round(qv).astype(int)
-        qv = qv[qv > 0]
-        qv = np.unique(qv)
-        if len(qv) == 0:
-            return np.array([0.0]), ["0"]
-        ticks_log = np.log1p(qv)
-        return ticks_log, [str(v) for v in qv]
-
-    if tick_mode == "percentiles":
-        tickvals_log, ticktext = ticks_percentiles(beviljade, n_ticks)
-    else:
-        tickvals_log, ticktext = ticks_log_equal(beviljade, n_ticks)
-
-    fig = go.Figure(
-        go.Choroplethmap(
-            geojson=json_data,
-            locations=region_codes_map,
-            z=log_approved,
-            featureidkey="properties.ref:se:länskod",
-            colorscale="Blues",
-            showscale=True,
-            colorbar=dict(
-                title="Beviljade <br>kurser",
-                tickvals=tickvals_log,
-                ticktext=ticktext,
-                x=0.1,              # place at left side of plotting area
-                xanchor="left",     # anchor colorbar's left edge to x
-                y=0.5,              # vertically centered
-                yanchor="middle",
-                thickness=20,
-                len=0.8,
-            ),
-            customdata=df_regions["Beviljade"],
-            text=df_regions["Län"],
-            hovertemplate="<b>%{text}</b><br>Beviljade utbildningar: %{customdata}<extra></extra>",
-            marker_line_width=0.3,
-        )
-    )
-
-    fig.update_layout(
-        map=dict(style="white-bg", zoom=3.2, center=dict(lat=62.6952, lon=13.9149)),
-        width=470,
-        height=500,
-        margin=dict(r=0, t=50, l=0, b=0),
-    )
-    return fig
-
-# Build once (static)
-sweden_map = build_sweden_map(df, tick_mode="log_equal", n_ticks=6)
-# ----------------- end map
 
 
 # EXPLICITLY expose national KPIs as module-level vars
@@ -177,6 +54,14 @@ CHART_TITLE_SIZE = 18
 CHART_LEGEND_SIZE = 12
 CHART_LABEL_SIZE = 11
 CHART_FONT_FAMILY = "Arial"
+
+# --- National map with approved courses per county ---
+sweden_map = build_sweden_map(
+    df,
+    tick_mode="log_equal",   # or "percentiles"
+    n_ticks=6,
+    colorbar_side="left",
+)
 
 # --- National bar chart (education_area_chart for whole Sweden) ---
 summary_sweden, _stats_sweden = get_statistics(df, county=None, label="Sverige")

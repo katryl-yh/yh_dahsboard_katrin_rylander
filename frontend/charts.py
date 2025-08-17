@@ -1,14 +1,5 @@
 import plotly.graph_objects as go
-
-# Color constants
-GRAY_1 = "#CCCCCC"
-GRAY_2 = "#657072"
-GRAY_3 = "#4A606C"
-BLUE_1 = "#1f77b4"
-BLUE_11 = "#0284c7"
-GRAY_11 = "#d1d5db"
-GRAY_12 = "#989898"
-GRAY_13 = "#4A606C"
+from utils.constants import BLUE_1, GRAY_1, GRAY_12
 
 def education_area_chart(
     df_summary,
