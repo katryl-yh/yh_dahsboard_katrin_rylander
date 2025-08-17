@@ -254,7 +254,8 @@ def match_region_codes(
 
 def summarize_providers(df: pd.DataFrame, provider_col: str = "Anordnare namn") -> pd.DataFrame:
     """
-    Summarize per provider (from enriched df):
+    Summarize per provider (from enriched df) with rankings:
+      - Ranking beviljade platser (primary: Beviljade platser DESC, tiebreak: Beviljandegrad (platser) % DESC)
       - Anordnare namn
       - Beviljade platser
       - Sökta platser
@@ -262,10 +263,7 @@ def summarize_providers(df: pd.DataFrame, provider_col: str = "Anordnare namn") 
       - Beviljade kurser
       - Sökta kurser
       - Beviljandegrad (kurser) %
-
-    Applied places are taken from:
-      - "Sökta platser totalt" if present, else sum of columns starting with "Sökt antal platser ".
-    Granted places column is resolved from common variants.
+      - Ranking beviljade kursomgångar (primary: Beviljade kurser DESC, tiebreak: Beviljandegrad (kurser) % DESC)
     """
     if provider_col not in df.columns:
         raise ValueError(f"summarize_providers(): missing column '{provider_col}' in df")
@@ -276,6 +274,7 @@ def summarize_providers(df: pd.DataFrame, provider_col: str = "Anordnare namn") 
     granted_candidates = [
         "Totalt antal beviljade platser",
         "Beviljade platser totalt",  # in case enrichment already named it like this
+        COL_TOTAL_BEVILJADE_PLATSER,  # prefer constant if present
     ]
     granted_col = next((c for c in granted_candidates if c in df.columns), None)
     if not granted_col:
@@ -284,9 +283,11 @@ def summarize_providers(df: pd.DataFrame, provider_col: str = "Anordnare namn") 
             f"Tried: {granted_candidates}"
         )
 
-    # Resolve applied-places expression
-    if "Sökta platser totalt" in df.columns:
-        applied_expr = 'COALESCE("Sökta platser totalt", 0)'
+    # Resolve applied-places expression (prefer enriched total)
+    if COL_TOTAL_SOKTA in df.columns:
+        applied_expr = f'"{COL_TOTAL_SOKTA}"'
+    elif "Sökta platser totalt" in df.columns:
+        applied_expr = '"Sökta platser totalt"'
     else:
         year_cols = [c for c in df.columns if c.startswith("Sökt antal platser ")]
         if not year_cols:
@@ -295,23 +296,36 @@ def summarize_providers(df: pd.DataFrame, provider_col: str = "Anordnare namn") 
             applied_expr = " + ".join([f'COALESCE("{c}", 0)' for c in year_cols])
 
     q = f"""
+    WITH agg AS (
+        SELECT
+            TRIM("{provider_col}") AS provider,
+            SUM(COALESCE("{granted_col}", 0)) AS beviljade_platser,
+            SUM({applied_expr}) AS sokta_platser,
+            COALESCE(
+                ROUND(100.0 * SUM(COALESCE("{granted_col}", 0)) / NULLIF(SUM({applied_expr}), 0), 1),
+                0.0
+            ) AS beviljandegrad_platser_pct,
+            SUM(CASE WHEN "Beslut" = 'Beviljad' THEN 1 ELSE 0 END) AS beviljade_kurser,
+            COUNT(*) AS sokta_kurser,
+            COALESCE(
+                ROUND(100.0 * SUM(CASE WHEN "Beslut" = 'Beviljad' THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 1),
+                0.0
+            ) AS beviljandegrad_kurser_pct
+        FROM df
+        GROUP BY TRIM("{provider_col}")
+    )
     SELECT
-        TRIM("{provider_col}") AS "{provider_col}",
-        SUM(COALESCE("{granted_col}", 0)) AS "Beviljade platser",
-        SUM({applied_expr}) AS "Sökta platser",
-        COALESCE(
-            ROUND(100.0 * SUM(COALESCE("{granted_col}", 0)) / NULLIF(SUM({applied_expr}), 0), 1),
-            0.0
-        ) AS "Beviljandegrad (platser) %",
-        SUM(CASE WHEN "Beslut" = 'Beviljad' THEN 1 ELSE 0 END) AS "Beviljade kurser",
-        COUNT(*) AS "Sökta kurser",
-        COALESCE(
-            ROUND(100.0 * SUM(CASE WHEN "Beslut" = 'Beviljad' THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 1),
-            0.0
-        ) AS "Beviljandegrad (kurser) %"
-    FROM df
-    GROUP BY TRIM("{provider_col}")
-    ORDER BY "Beviljade platser" DESC
+        DENSE_RANK() OVER (ORDER BY beviljade_platser DESC, beviljandegrad_platser_pct DESC) AS "Ranking beviljade platser",
+        provider AS "Anordnare namn",
+        beviljade_platser AS "Beviljade platser",
+        sokta_platser AS "Sökta platser",
+        beviljandegrad_platser_pct AS "Beviljandegrad (platser) %",
+        beviljade_kurser AS "Beviljade kurser",
+        sokta_kurser AS "Sökta kurser",
+        beviljandegrad_kurser_pct AS "Beviljandegrad (kurser) %",
+        DENSE_RANK() OVER (ORDER BY beviljade_kurser DESC, beviljandegrad_kurser_pct DESC) AS "Ranking beviljade kursomgångar"
+    FROM agg
+    ORDER BY "Ranking beviljade platser" ASC, "Anordnare namn" ASC
     """
 
     con = duckdb.connect()
