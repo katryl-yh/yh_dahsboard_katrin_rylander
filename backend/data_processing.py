@@ -6,8 +6,7 @@ import json
 import numpy as np
 import pandas as pd
 from difflib import get_close_matches
-
-import pandas as pd
+import duckdb
 
 from utils.constants import (
     DATA_DIRECTORY,
@@ -252,3 +251,74 @@ def match_region_codes(
         hit = get_close_matches(region, keys, n=1)
         matched.append(code_map[hit[0]] if hit else None)
     return matched
+
+def summarize_providers(df: pd.DataFrame, provider_col: str = "Anordnare namn") -> pd.DataFrame:
+    """
+    Summarize per provider (from enriched df):
+      - Anordnare namn
+      - Beviljade platser
+      - Sökta platser
+      - Beviljandegrad (platser) %
+      - Beviljade kurser
+      - Sökta kurser
+      - Beviljandegrad (kurser) %
+
+    Applied places are taken from:
+      - "Sökta platser totalt" if present, else sum of columns starting with "Sökt antal platser ".
+    Granted places column is resolved from common variants.
+    """
+    if provider_col not in df.columns:
+        raise ValueError(f"summarize_providers(): missing column '{provider_col}' in df")
+    if "Beslut" not in df.columns:
+        raise ValueError("summarize_providers(): missing column 'Beslut' in df")
+
+    # Resolve granted-places column
+    granted_candidates = [
+        "Totalt antal beviljade platser",
+        "Beviljade platser totalt",  # in case enrichment already named it like this
+    ]
+    granted_col = next((c for c in granted_candidates if c in df.columns), None)
+    if not granted_col:
+        raise ValueError(
+            "summarize_providers(): could not find granted places column. "
+            f"Tried: {granted_candidates}"
+        )
+
+    # Resolve applied-places expression
+    if "Sökta platser totalt" in df.columns:
+        applied_expr = 'COALESCE("Sökta platser totalt", 0)'
+    else:
+        year_cols = [c for c in df.columns if c.startswith("Sökt antal platser ")]
+        if not year_cols:
+            applied_expr = "0"
+        else:
+            applied_expr = " + ".join([f'COALESCE("{c}", 0)' for c in year_cols])
+
+    q = f"""
+    SELECT
+        TRIM("{provider_col}") AS "{provider_col}",
+        SUM(COALESCE("{granted_col}", 0)) AS "Beviljade platser",
+        SUM({applied_expr}) AS "Sökta platser",
+        COALESCE(
+            ROUND(100.0 * SUM(COALESCE("{granted_col}", 0)) / NULLIF(SUM({applied_expr}), 0), 1),
+            0.0
+        ) AS "Beviljandegrad (platser) %",
+        SUM(CASE WHEN "Beslut" = 'Beviljad' THEN 1 ELSE 0 END) AS "Beviljade kurser",
+        COUNT(*) AS "Sökta kurser",
+        COALESCE(
+            ROUND(100.0 * SUM(CASE WHEN "Beslut" = 'Beviljad' THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 1),
+            0.0
+        ) AS "Beviljandegrad (kurser) %"
+    FROM df
+    GROUP BY TRIM("{provider_col}")
+    ORDER BY "Beviljade platser" DESC
+    """
+
+    con = duckdb.connect()
+    try:
+        con.register("df", df)
+        out = con.execute(q).df()
+    finally:
+        con.close()
+
+    return out

@@ -7,6 +7,7 @@ from backend.data_processing import (
     load_base_df,
     get_statistics,
     compute_national_stats,
+    summarize_providers,
 )
 
 from frontend.maps import build_sweden_map
@@ -26,6 +27,8 @@ def _safe_refresh(state, *var_names):
 df = load_base_df()
 nat = compute_national_stats(df)
 
+# Build providers table from enriched df (df is already enriched by load_base_df)
+df_providers = summarize_providers(df)
 
 # EXPLICITLY expose national KPIs as module-level vars
 national_total_courses = nat.get("national_total_courses", 0)
@@ -196,6 +199,16 @@ with tgb.Page() as page:
     with tgb.layout(columns="1"):
         tgb.chart(figure="{sweden_bar_chart}", type="plotly")
 
+    with tgb.part(class_name="table-card"):
+        tgb.text("### Utbildningsanordnare statistik", mode="md")
+        tgb.text(
+        "Tabellen är sorterad efter beviljade antal platser totalt, vilket innebär att vissa  \n"
+        "anordnare fått högre värde på andra kolumner, men lägre plats i tabellen.   \n",
+        mode="md")
+        # Simple paginated table; adjust page_size/height as needed
+        tgb.table("{df_providers}", page_size=15, height="520px")
+
+
     # County section
     tgb.text("## Ansökningsomgång per Län", mode="md")
     tgb.selector("{selected_county}", lov=all_counties, dropdown=True, on_change=on_county_change)
@@ -244,6 +257,8 @@ Gui(page).run(
         "approved_places": approved_places,
         "county_chart": county_chart,
         # national (static) — pass explicitly instead of **nat
+        # Providers table
+        "df_providers": df_providers,
         "sweden_map": sweden_map, 
         "sweden_bar_chart": sweden_bar_chart, 
         "national_total_courses": national_total_courses,
