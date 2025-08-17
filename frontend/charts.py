@@ -212,9 +212,9 @@ def provider_education_area_chart(
     )
     return fig
 
-def county_credits_histogram(
+def credits_histogram(
     df: pd.DataFrame,
-    county: str,
+    county: str | None = None,
     *,
     nbinsx: int = 20,
     xtick_size: int = 11,
@@ -224,21 +224,23 @@ def county_credits_histogram(
     font_family: str = "Arial",
 ) -> go.Figure:
     """
-    Stacked histogram of YH credits for approved (blue) and rejected (gray) courses in a county.
+    Stacked histogram of YH credits for approved (blue) and rejected (gray).
+    If county is None => national (Sverige), else filters to the specified county.
     """
-    if df is None or not len(df):
-        return go.Figure()
-
-    # Filter and normalize
-    d = df.copy()
-    d["Län"] = d["Län"].astype(str).str.strip()
-    county = str(county).strip()
-    d = d[d["Län"] == county]
-
     fig = go.Figure()
+    if df is None or df.empty:
+        return fig
+
+    d = df.copy()
+    scope_label = "Sverige" if county in (None, "", "None") else str(county).strip()
+    if county not in (None, "", "None"):
+        d["Län"] = d["Län"].astype(str).str.strip()
+        d = d[d["Län"] == scope_label]
+
     if d.empty:
         fig.update_layout(
-            title=dict(text=f"Fördelning av YH-poäng i {county}", x=0.0, font=dict(size=title_size, family=font_family)),
+            title=dict(text=f"Fördelning av YH-poäng i {scope_label}", x=0.0,
+                       font=dict(size=title_size, family=font_family)),
             plot_bgcolor="white",
             paper_bgcolor="white",
             height=500,
@@ -246,11 +248,10 @@ def county_credits_histogram(
         )
         return fig
 
-    # Pick the credits column
     credits_col = "YH-poäng" if "YH-poäng" in d.columns else ("Poäng" if "Poäng" in d.columns else None)
     if credits_col is None:
         fig.update_layout(
-            title=dict(text=f"Fördelning av YH-poäng i {county} (saknar kolumn för poäng)", x=0.0,
+            title=dict(text=f"Fördelning av YH-poäng i {scope_label} (saknar kolumn för poäng)", x=0.0,
                        font=dict(size=title_size, family=font_family)),
             plot_bgcolor="white",
             paper_bgcolor="white",
@@ -266,7 +267,6 @@ def county_credits_histogram(
     approved_count = int(approved.shape[0])
     approval_rate = (approved_count / total_courses * 100.0) if total_courses > 0 else 0.0
 
-    # Approved (base)
     fig.add_trace(go.Histogram(
         x=approved,
         name="Beviljade",
@@ -275,7 +275,6 @@ def county_credits_histogram(
         opacity=1.0,
         hovertemplate="YH-poäng: %{x}<br>Antal: %{y}<extra></extra>",
     ))
-    # Rejected (stacked)
     fig.add_trace(go.Histogram(
         x=rejected,
         name="Avslag",
@@ -299,7 +298,7 @@ def county_credits_histogram(
             font=dict(size=legend_font_size, family=font_family),
         ),
         title=dict(
-            text=f"Fördelning av YH-poäng i {county}"
+            text=f"Fördelning av YH-poäng i {scope_label}"
                  f"<br><sup>Beviljandegrad: {approval_rate:.1f}% ({approved_count} av {total_courses} kurser)</sup>",
             x=0.0,
             font=dict(size=title_size, family=font_family),

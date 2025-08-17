@@ -14,7 +14,7 @@ from frontend.maps import build_sweden_map
 from frontend.charts import (
     education_area_chart, 
     provider_education_area_chart,
-    county_credits_histogram    
+    credits_histogram    
 )
 
 logging.basicConfig(level=logging.WARNING)
@@ -83,6 +83,18 @@ sweden_bar_chart = education_area_chart(
     font_family=CHART_FONT_FAMILY,
 )
 
+# --- National histogram (reuse credits_histogram with county=None) ---
+sweden_histogram = credits_histogram(
+    df,
+    county=None,
+    nbinsx=20,
+    xtick_size=CHART_XTICK_SIZE,
+    ytick_size=CHART_YTICK_SIZE,
+    title_size=CHART_TITLE_SIZE,
+    legend_font_size=CHART_LEGEND_SIZE,
+    font_family=CHART_FONT_FAMILY,
+)
+
 # initial chart for selected county
 county_chart = education_area_chart(
     summary,
@@ -95,8 +107,8 @@ county_chart = education_area_chart(
     font_family=CHART_FONT_FAMILY,
 )
 
-# Initial histogram for selected county
-county_histogram = county_credits_histogram(
+# Initial histogram for selected county (reuse same function)
+county_histogram = credits_histogram(
     df,
     selected_county,
     nbinsx=20,
@@ -246,7 +258,7 @@ def on_county_change(state, var_name=None, var_value=None):
             label_font_size=CHART_LABEL_SIZE,
             font_family=CHART_FONT_FAMILY,
         )
-        state.county_histogram = county_credits_histogram(
+        state.county_histogram = credits_histogram(
             state.df,
             state.selected_county,
             nbinsx=20,
@@ -276,7 +288,7 @@ def on_county_change(state, var_name=None, var_value=None):
             label_font_size=CHART_LABEL_SIZE,
             font_family=CHART_FONT_FAMILY,
         )
-        state.county_histogram = county_credits_histogram(
+        state.county_histogram = credits_histogram(
             state.df,
             state.selected_county,
             nbinsx=20,
@@ -349,6 +361,8 @@ with tgb.Page() as page:
     with tgb.layout(columns="1"):
         tgb.chart(figure="{sweden_bar_chart}", type="plotly")
 
+    with tgb.layout(columns="1"):
+        tgb.chart(figure="{sweden_histogram}", type="plotly")
     with tgb.part(class_name="table-card"):
         tgb.text("### Utbildningsanordnare statistik", mode="md")
         tgb.text(
@@ -435,6 +449,7 @@ Gui(page).run(
         # national (static) — pass explicitly instead of **nat
         "sweden_map": sweden_map, 
         "sweden_bar_chart": sweden_bar_chart, 
+        "sweden_histogram": sweden_histogram,
         "national_total_courses": national_total_courses,
         "national_approved_courses": national_approved_courses,
         "national_approval_rate_str": national_approval_rate_str,
