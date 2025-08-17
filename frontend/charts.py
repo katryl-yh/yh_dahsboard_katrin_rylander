@@ -136,9 +136,6 @@ def provider_education_area_chart(
     legend_font_size: int = 12,
     label_font_size: int = 11,
     font_family: str = "Arial",
-    gray_total: str = "#d1d5db",
-    blue_approved: str = "#0284c7",
-    gray_axis: str = "#989898",
 ):
     d = df[df["Anordnare namn"].astype(str).str.strip() == str(provider).strip()].copy()
     if d.empty:
@@ -150,45 +147,67 @@ def provider_education_area_chart(
         pd.DataFrame({"Total": total, "Approved": approved})
         .fillna(0)
         .astype(int)
-        .sort_values("Total")
+        .sort_values("Total", ascending=True)
     )
+    summary["Rejected"] = (summary["Total"] - summary["Approved"]).clip(lower=0)
 
     categories = summary.index.tolist()
     fig = go.Figure()
-    fig.add_trace(go.Bar(
-        y=categories,
-        x=summary["Total"],
-        name="Totalt",
-        orientation="h",
-        marker_color=gray_total,
-    ))
+    # Beviljade (near axis)
     fig.add_trace(go.Bar(
         y=categories,
         x=summary["Approved"],
-        name="Beviljad",
+        name="Beviljade",
         orientation="h",
-        marker_color=blue_approved,
+        marker_color=BLUE_1,
+        hovertemplate="Utbildningsområde: %{y}<br>Beviljade: %{x}<extra></extra>",
+        legendrank=1,
+    ))
+    # Avslag (to the right)
+    fig.add_trace(go.Bar(
+        y=categories,
+        x=summary["Rejected"],
+        name="Avslag",
+        orientation="h",
+        marker_color=GRAY_1,
+        hovertemplate="Utbildningsområde: %{y}<br>Avslag: %{x}<extra></extra>",
+        legendrank=2,
     ))
 
     fig.update_layout(
-        barmode="overlay",
+        barmode="stack",
+        bargap=0.25,
         height=500,
-        margin=dict(l=100, r=20, t=60, b=40),
+        margin=dict(l=120, r=30, t=80, b=40),
         plot_bgcolor="white",
         paper_bgcolor="white",
         showlegend=True,
-        legend=dict(font=dict(size=legend_font_size, family=font_family)),
+        legend=dict(
+            orientation="h",
+            yanchor="bottom", y=1.02,
+            xanchor="right", x=1,
+            font=dict(size=legend_font_size, family=font_family),
+            traceorder="normal",
+        ),
         title=dict(
-            text=f"Utbildningsområden för {provider}",
-            x=0.0,
+            text=f"Ansökningar per utbildningsområde – {provider}",
             font=dict(size=title_size, family=font_family),
         ),
         font=dict(family=font_family),
     )
     fig.update_yaxes(
-        showline=True, linecolor=gray_axis, tickfont=dict(size=ytick_size, color=gray_axis)
+        showline=True,
+        linecolor=GRAY_12,
+        tickfont=dict(size=ytick_size, color=GRAY_12, family=font_family),
+        categoryorder="array",
+        categoryarray=categories,
+        automargin=True,
     )
     fig.update_xaxes(
-        showline=True, linecolor=gray_axis, tickfont=dict(size=xtick_size, color=gray_axis)
+        showline=True,
+        linecolor=GRAY_12,
+        tickfont=dict(size=xtick_size, color=GRAY_12, family=font_family),
+        rangemode="tozero",
+        automargin=True,
     )
     return fig
