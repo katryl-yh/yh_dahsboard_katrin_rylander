@@ -101,9 +101,11 @@ def _compute_provider_kpis(selected: str):
         row = df_providers[
             df_providers["Anordnare namn"].astype(str).str.strip() == str(selected).strip()
         ]
+    total_providers = len(df_providers)
     if row.empty:
         return dict(
             provider_rank_places=0,
+            provider_rank_places_summary_str=f"0 av {total_providers:,}",
             provider_places_summary_str="0 av 0",
             provider_places_approval_rate_str="0.0%",
             provider_courses_summary_str="0 av 0",
@@ -116,8 +118,10 @@ def _compute_provider_kpis(selected: str):
     courses_appr = int(r.get("Beviljade kurser", 0))
     courses_total = int(r.get("Sökta kurser", 0))
     courses_rate = float(r.get("Beviljandegrad (kurser) %", 0.0))
+    rank_places = int(r.get("Ranking beviljade platser", 0))
     return dict(
-        provider_rank_places=int(r.get("Ranking beviljade platser", 0)),
+        provider_rank_places=rank_places,
+        provider_rank_places_summary_str=f"{rank_places} av {total_providers:,}",
         provider_places_summary_str=f"{places_appr:,} av {places_applied:,}",
         provider_places_approval_rate_str=f"{places_rate:.1f}%",
         provider_courses_summary_str=f"{courses_appr:,} av {courses_total:,}",
@@ -126,6 +130,7 @@ def _compute_provider_kpis(selected: str):
 
 _provider_kpis = _compute_provider_kpis(selected_provider)
 provider_rank_places = _provider_kpis["provider_rank_places"]
+provider_rank_places_summary_str = _provider_kpis["provider_rank_places_summary_str"]
 provider_places_summary_str = _provider_kpis["provider_places_summary_str"]
 provider_places_approval_rate_str = _provider_kpis["provider_places_approval_rate_str"]
 provider_courses_summary_str = _provider_kpis["provider_courses_summary_str"]
@@ -152,6 +157,7 @@ def on_provider_change(state, var_name=None, var_value=None):
     try:
         kpis = _compute_provider_kpis(selected)
         state.provider_rank_places = kpis["provider_rank_places"]
+        state.provider_rank_places_summary_str = kpis["provider_rank_places_summary_str"]
         state.provider_places_summary_str = kpis["provider_places_summary_str"]
         state.provider_places_approval_rate_str = kpis["provider_places_approval_rate_str"]
         state.provider_courses_summary_str = kpis["provider_courses_summary_str"]
@@ -169,6 +175,7 @@ def on_provider_change(state, var_name=None, var_value=None):
     except Exception as e:
         logging.warning("on_provider_change failed for '%s': %s", selected, e)
         state.provider_rank_places = 0
+        state.provider_rank_places_summary_str = f"0 av {len(df_providers):,}"
         state.provider_places_summary_str = "0 av 0"
         state.provider_places_approval_rate_str = "0.0%"
         state.provider_courses_summary_str = "0 av 0"
@@ -187,6 +194,7 @@ def on_provider_change(state, var_name=None, var_value=None):
         state,
         "selected_provider",
         "provider_rank_places",
+        "provider_rank_places_summary_str",
         "provider_places_summary_str",
         "provider_places_approval_rate_str",
         "provider_courses_summary_str",
@@ -317,19 +325,19 @@ with tgb.Page() as page:
 
     with tgb.layout(columns="1 1 1 1 1"):
         with tgb.part(class_name="stat-card"):
-            tgb.text("#### Ranking beviljade platser", mode="md")
-            tgb.text("**{provider_rank_places}**", mode="md")
+            tgb.text("##### Ranking beviljade platser", mode="md")
+            tgb.text("**{provider_rank_places_summary_str}**", mode="md")
         with tgb.part(class_name="stat-card"):
-            tgb.text("#### Platser: beviljade av sökta", mode="md")
+            tgb.text("##### Platser: beviljade av sökta", mode="md")
             tgb.text("**{provider_places_summary_str}**", mode="md")
         with tgb.part(class_name="stat-card"):
-            tgb.text("#### Beviljandegrad (platser)", mode="md")
+            tgb.text("##### Beviljandegrad (platser)", mode="md")
             tgb.text("**{provider_places_approval_rate_str}**", mode="md")
         with tgb.part(class_name="stat-card"):
-            tgb.text("#### Kurser: beviljade av sökta", mode="md")
+            tgb.text("##### Kurser: beviljade av sökta", mode="md")
             tgb.text("**{provider_courses_summary_str}**", mode="md")
         with tgb.part(class_name="stat-card"):
-            tgb.text("#### Beviljandegrad (kurser)", mode="md")
+            tgb.text("##### Beviljandegrad (kurser)", mode="md")
             tgb.text("**{provider_courses_approval_rate_str}**", mode="md")
 
     with tgb.layout(columns="1"):

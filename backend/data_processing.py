@@ -295,7 +295,7 @@ def summarize_providers(df: pd.DataFrame, provider_col: str = "Anordnare namn") 
         else:
             applied_expr = " + ".join([f'COALESCE("{c}", 0)' for c in year_cols])
 
-    q = f"""
+    q = f"""--sql
     WITH agg AS (
         SELECT
             TRIM("{provider_col}") AS provider,
