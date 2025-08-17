@@ -11,7 +11,7 @@ from backend.data_processing import (
 )
 
 from frontend.maps import build_sweden_map
-from frontend.charts import education_area_chart
+from frontend.charts import education_area_chart, provider_education_area_chart
 
 logging.basicConfig(level=logging.WARNING)
 
@@ -90,6 +90,111 @@ county_chart = education_area_chart(
     label_font_size=CHART_LABEL_SIZE,
     font_family=CHART_FONT_FAMILY,
 )
+
+# ---------- Provider state (initial) ----------
+all_providers = sorted(df["Anordnare namn"].dropna().astype(str).str.strip().unique().tolist())
+selected_provider = all_providers[0] if all_providers else ""
+
+def _compute_provider_kpis(selected: str):
+    row = pd.DataFrame()
+    if selected:
+        row = df_providers[
+            df_providers["Anordnare namn"].astype(str).str.strip() == str(selected).strip()
+        ]
+    if row.empty:
+        return dict(
+            provider_rank_places=0,
+            provider_places_summary_str="0 av 0",
+            provider_places_approval_rate_str="0.0%",
+            provider_courses_summary_str="0 av 0",
+            provider_courses_approval_rate_str="0.0%",
+        )
+    r = row.iloc[0]
+    places_appr = int(r.get("Beviljade platser", 0))
+    places_applied = int(r.get("Sökta platser", 0))
+    places_rate = float(r.get("Beviljandegrad (platser) %", 0.0))
+    courses_appr = int(r.get("Beviljade kurser", 0))
+    courses_total = int(r.get("Sökta kurser", 0))
+    courses_rate = float(r.get("Beviljandegrad (kurser) %", 0.0))
+    return dict(
+        provider_rank_places=int(r.get("Ranking beviljade platser", 0)),
+        provider_places_summary_str=f"{places_appr:,} av {places_applied:,}",
+        provider_places_approval_rate_str=f"{places_rate:.1f}%",
+        provider_courses_summary_str=f"{courses_appr:,} av {courses_total:,}",
+        provider_courses_approval_rate_str=f"{courses_rate:.1f}%",
+    )
+
+_provider_kpis = _compute_provider_kpis(selected_provider)
+provider_rank_places = _provider_kpis["provider_rank_places"]
+provider_places_summary_str = _provider_kpis["provider_places_summary_str"]
+provider_places_approval_rate_str = _provider_kpis["provider_places_approval_rate_str"]
+provider_courses_summary_str = _provider_kpis["provider_courses_summary_str"]
+provider_courses_approval_rate_str = _provider_kpis["provider_courses_approval_rate_str"]
+
+provider_chart = provider_education_area_chart(
+    df,
+    selected_provider,
+    xtick_size=CHART_XTICK_SIZE,
+    ytick_size=CHART_YTICK_SIZE,
+    title_size=CHART_TITLE_SIZE,
+    legend_font_size=CHART_LEGEND_SIZE,
+    label_font_size=CHART_LABEL_SIZE,
+    font_family=CHART_FONT_FAMILY,
+)
+
+def on_provider_change(state, var_name=None, var_value=None):
+    if var_name != "selected_provider":
+        return
+    selected = (str(var_value).strip() if var_value is not None else "").strip()
+    if not selected or selected not in state.all_providers:
+        return
+    state.selected_provider = selected
+    try:
+        kpis = _compute_provider_kpis(selected)
+        state.provider_rank_places = kpis["provider_rank_places"]
+        state.provider_places_summary_str = kpis["provider_places_summary_str"]
+        state.provider_places_approval_rate_str = kpis["provider_places_approval_rate_str"]
+        state.provider_courses_summary_str = kpis["provider_courses_summary_str"]
+        state.provider_courses_approval_rate_str = kpis["provider_courses_approval_rate_str"]
+        state.provider_chart = provider_education_area_chart(
+            state.df,
+            selected,
+            xtick_size=CHART_XTICK_SIZE,
+            ytick_size=CHART_YTICK_SIZE,
+            title_size=CHART_TITLE_SIZE,
+            legend_font_size=CHART_LEGEND_SIZE,
+            label_font_size=CHART_LABEL_SIZE,
+            font_family=CHART_FONT_FAMILY,
+        )
+    except Exception as e:
+        logging.warning("on_provider_change failed for '%s': %s", selected, e)
+        state.provider_rank_places = 0
+        state.provider_places_summary_str = "0 av 0"
+        state.provider_places_approval_rate_str = "0.0%"
+        state.provider_courses_summary_str = "0 av 0"
+        state.provider_courses_approval_rate_str = "0.0%"
+        state.provider_chart = provider_education_area_chart(
+            state.df,
+            selected,
+            xtick_size=CHART_XTICK_SIZE,
+            ytick_size=CHART_YTICK_SIZE,
+            title_size=CHART_TITLE_SIZE,
+            legend_font_size=CHART_LEGEND_SIZE,
+            label_font_size=CHART_LABEL_SIZE,
+            font_family=CHART_FONT_FAMILY,
+        )
+    _safe_refresh(
+        state,
+        "selected_provider",
+        "provider_rank_places",
+        "provider_places_summary_str",
+        "provider_places_approval_rate_str",
+        "provider_courses_summary_str",
+        "provider_courses_approval_rate_str",
+        "provider_chart",
+    )
+
+# -----------------------------
 
 def on_county_change(state, var_name=None, var_value=None):
     if var_name != "selected_county":
@@ -207,7 +312,28 @@ with tgb.Page() as page:
         mode="md")
         # Simple paginated table; adjust page_size/height as needed
         tgb.table("{df_providers}", page_size=15, height="520px")
+    
+    tgb.selector("{selected_provider}", lov=all_providers, dropdown=True, on_change=on_provider_change)
 
+    with tgb.layout(columns="1 1 1 1 1"):
+        with tgb.part(class_name="stat-card"):
+            tgb.text("#### Ranking beviljade platser", mode="md")
+            tgb.text("**{provider_rank_places}**", mode="md")
+        with tgb.part(class_name="stat-card"):
+            tgb.text("#### Platser: beviljade av sökta", mode="md")
+            tgb.text("**{provider_places_summary_str}**", mode="md")
+        with tgb.part(class_name="stat-card"):
+            tgb.text("#### Beviljandegrad (platser)", mode="md")
+            tgb.text("**{provider_places_approval_rate_str}**", mode="md")
+        with tgb.part(class_name="stat-card"):
+            tgb.text("#### Kurser: beviljade av sökta", mode="md")
+            tgb.text("**{provider_courses_summary_str}**", mode="md")
+        with tgb.part(class_name="stat-card"):
+            tgb.text("#### Beviljandegrad (kurser)", mode="md")
+            tgb.text("**{provider_courses_approval_rate_str}**", mode="md")
+
+    with tgb.layout(columns="1"):
+        tgb.chart(figure="{provider_chart}", type="plotly")
 
     # County section
     tgb.text("## Ansökningsomgång per Län", mode="md")
@@ -245,6 +371,7 @@ Gui(page).run(
     use_reloader=False,
     data={
         "df": df,
+        "df_providers": df_providers,
         "all_counties": all_counties,
         "selected_county": selected_county,
         "df_selected_county": df_selected_county,
@@ -257,8 +384,6 @@ Gui(page).run(
         "approved_places": approved_places,
         "county_chart": county_chart,
         # national (static) — pass explicitly instead of **nat
-        # Providers table
-        "df_providers": df_providers,
         "sweden_map": sweden_map, 
         "sweden_bar_chart": sweden_bar_chart, 
         "national_total_courses": national_total_courses,
@@ -266,5 +391,14 @@ Gui(page).run(
         "national_approval_rate_str": national_approval_rate_str,
         "national_requested_places": national_requested_places,
         "national_approved_places": national_approved_places,
+        # Provider bindings
+        "all_providers": all_providers,
+        "selected_provider": selected_provider,
+        "provider_rank_places": provider_rank_places,
+        "provider_places_summary_str": provider_places_summary_str,
+        "provider_places_approval_rate_str": provider_places_approval_rate_str,
+        "provider_courses_summary_str": provider_courses_summary_str,
+        "provider_courses_approval_rate_str": provider_courses_approval_rate_str,
+        "provider_chart": provider_chart,
     },
 )

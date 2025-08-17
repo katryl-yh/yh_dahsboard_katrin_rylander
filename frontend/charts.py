@@ -1,5 +1,7 @@
+from __future__ import annotations
 import plotly.graph_objects as go
 from utils.constants import BLUE_1, GRAY_1, GRAY_12
+import pandas as pd
 
 def education_area_chart(
     df_summary,
@@ -121,5 +123,72 @@ def education_area_chart(
         ),
         annotations=annotations,
         **options
+    )
+    return fig
+
+def provider_education_area_chart(
+    df: pd.DataFrame,
+    provider: str,
+    *,
+    xtick_size: int = 11,
+    ytick_size: int = 12,
+    title_size: int = 18,
+    legend_font_size: int = 12,
+    label_font_size: int = 11,
+    font_family: str = "Arial",
+    gray_total: str = "#d1d5db",
+    blue_approved: str = "#0284c7",
+    gray_axis: str = "#989898",
+):
+    d = df[df["Anordnare namn"].astype(str).str.strip() == str(provider).strip()].copy()
+    if d.empty:
+        return go.Figure()
+
+    total = d.groupby("Utbildningsområde").size()
+    approved = d[d["Beslut"] == "Beviljad"].groupby("Utbildningsområde").size()
+    summary = (
+        pd.DataFrame({"Total": total, "Approved": approved})
+        .fillna(0)
+        .astype(int)
+        .sort_values("Total")
+    )
+
+    categories = summary.index.tolist()
+    fig = go.Figure()
+    fig.add_trace(go.Bar(
+        y=categories,
+        x=summary["Total"],
+        name="Totalt",
+        orientation="h",
+        marker_color=gray_total,
+    ))
+    fig.add_trace(go.Bar(
+        y=categories,
+        x=summary["Approved"],
+        name="Beviljad",
+        orientation="h",
+        marker_color=blue_approved,
+    ))
+
+    fig.update_layout(
+        barmode="overlay",
+        height=500,
+        margin=dict(l=100, r=20, t=60, b=40),
+        plot_bgcolor="white",
+        paper_bgcolor="white",
+        showlegend=True,
+        legend=dict(font=dict(size=legend_font_size, family=font_family)),
+        title=dict(
+            text=f"Utbildningsområden för {provider}",
+            x=0.0,
+            font=dict(size=title_size, family=font_family),
+        ),
+        font=dict(family=font_family),
+    )
+    fig.update_yaxes(
+        showline=True, linecolor=gray_axis, tickfont=dict(size=ytick_size, color=gray_axis)
+    )
+    fig.update_xaxes(
+        showline=True, linecolor=gray_axis, tickfont=dict(size=xtick_size, color=gray_axis)
     )
     return fig
