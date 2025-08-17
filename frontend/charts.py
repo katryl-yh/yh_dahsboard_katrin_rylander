@@ -212,7 +212,7 @@ def provider_education_area_chart(
     )
     return fig
 
-def credits_histogram(
+def credits_histogram2(
     df: pd.DataFrame,
     county: str | None = None,
     *,
@@ -317,5 +317,194 @@ def credits_histogram(
         tickfont=dict(size=ytick_size, color=GRAY_12, family=font_family),
         zeroline=False,
         gridcolor="#eee",
+    )
+    return fig
+
+def credits_histogram(
+    df: pd.DataFrame,
+    county: str | None = None,
+    *,
+    nbinsx: int = 20,
+    xtick_size: int = 11,
+    ytick_size: int = 12,
+    title_size: int = 18,
+    legend_font_size: int = 12,
+    font_family: str = "Arial",
+) -> go.Figure:
+    """
+    Stacked histogram of YH credits for approved (blue) and rejected (gray).
+    If county is None => national (Sverige), else filters to the specified county.
+    """
+    fig = go.Figure()
+    if df is None or df.empty:
+        fig.update_layout(
+            barmode="stack",
+            bargap=0.25,
+            height=500,
+            margin=dict(l=120, r=30, t=80, b=40),
+            plot_bgcolor="white",
+            paper_bgcolor="white",
+            showlegend=True,
+            legend=dict(
+                orientation="h",
+                yanchor="bottom", y=1.02,
+                xanchor="right", x=1.0,
+                font=dict(size=legend_font_size, family=font_family),
+                traceorder="normal",
+            ),
+            title=dict(
+                text="Fördelning av YH-poäng",
+                font=dict(size=title_size, family=font_family),
+            ),
+            xaxis=dict(
+                showline=True, linecolor=GRAY_12,
+                tickfont=dict(size=xtick_size, color=GRAY_12, family=font_family),
+                zeroline=False,
+                automargin=True,
+            ),
+            yaxis=dict(
+                showline=True, linecolor=GRAY_12,
+                tickfont=dict(size=ytick_size, color=GRAY_12, family=font_family),
+                zeroline=False,
+                gridcolor="#eee",
+                automargin=True,
+            ),
+        )
+        return fig
+
+    d = df.copy()
+    scope_label = "Sverige" if county in (None, "", "None") else str(county).strip()
+    if county not in (None, "", "None"):
+        d["Län"] = d["Län"].astype(str).str.strip()
+        d = d[d["Län"] == scope_label]
+
+    if d.empty:
+        fig.update_layout(
+            barmode="stack",
+            bargap=0.25,
+            height=500,
+            margin=dict(l=120, r=30, t=80, b=40),
+            plot_bgcolor="white",
+            paper_bgcolor="white",
+            showlegend=True,
+            legend=dict(
+                orientation="h",
+                yanchor="bottom", y=1.02,
+                xanchor="right", x=1.0,
+                font=dict(size=legend_font_size, family=font_family),
+                traceorder="normal",
+            ),
+            title=dict(
+                text=f"Fördelning av YH-poäng i {scope_label}",
+                font=dict(size=title_size, family=font_family),
+            ),
+            xaxis=dict(
+                showline=True, linecolor=GRAY_12,
+                tickfont=dict(size=xtick_size, color=GRAY_12, family=font_family),
+                zeroline=False,
+                automargin=True,
+            ),
+            yaxis=dict(
+                showline=True, linecolor=GRAY_12,
+                tickfont=dict(size=ytick_size, color=GRAY_12, family=font_family),
+                zeroline=False,
+                gridcolor="#eee",
+                automargin=True,
+            ),
+        )
+        return fig
+
+    credits_col = "YH-poäng" if "YH-poäng" in d.columns else ("Poäng" if "Poäng" in d.columns else None)
+    if credits_col is None:
+        fig.update_layout(
+            barmode="stack",
+            bargap=0.25,
+            height=500,
+            margin=dict(l=120, r=30, t=80, b=40),
+            plot_bgcolor="white",
+            paper_bgcolor="white",
+            showlegend=False,
+            title=dict(
+                text=f"Fördelning av YH-poäng i {scope_label} (saknar kolumn för poäng)",
+                font=dict(size=title_size, family=font_family),
+            ),
+            xaxis=dict(
+                showline=True, linecolor=GRAY_12,
+                tickfont=dict(size=xtick_size, color=GRAY_12, family=font_family),
+                zeroline=False,
+                automargin=True,
+            ),
+            yaxis=dict(
+                showline=True, linecolor=GRAY_12,
+                tickfont=dict(size=ytick_size, color=GRAY_12, family=font_family),
+                zeroline=False,
+                gridcolor="#eee",
+                automargin=True,
+            ),
+        )
+        return fig
+
+    approved = d[d["Beslut"] == "Beviljad"][credits_col].dropna()
+    rejected = d[d["Beslut"] == "Avslag"][credits_col].dropna()
+
+    total_courses = len(d)
+    approved_count = int(approved.shape[0])
+    approval_rate = (approved_count / total_courses * 100.0) if total_courses > 0 else 0.0
+
+    fig.add_trace(go.Histogram(
+        x=approved,
+        name="Beviljade",
+        nbinsx=nbinsx,
+        marker_color=BLUE_1,
+        opacity=1.0,
+        hovertemplate="YH-poäng: %{x}<br>Antal: %{y}<extra></extra>",
+        legendrank=1,
+    ))
+    fig.add_trace(go.Histogram(
+        x=rejected,
+        name="Avslag",
+        nbinsx=nbinsx,
+        marker_color=GRAY_1,
+        opacity=1.0,
+        hovertemplate="YH-poäng: %{x}<br>Antal: %{y}<extra></extra>",
+        legendrank=2,
+    ))
+
+    fig.update_layout(
+        barmode="stack",
+        bargap=0.25,
+        height=500,
+        margin=dict(l=120, r=30, t=80, b=40),
+        plot_bgcolor="white",
+        paper_bgcolor="white",
+        showlegend=True,
+        legend=dict(
+            orientation="h",
+            yanchor="bottom", y=1.02,
+            xanchor="right", x=1.0,
+            font=dict(size=legend_font_size, family=font_family),
+            traceorder="normal",
+        ),
+        title=dict(
+            text=f"Fördelning av YH-poäng i {scope_label}"
+                 f"<br><sup>Beviljandegrad: {approval_rate:.1f}% ({approved_count} av {total_courses} kurser)</sup>",
+            font=dict(size=title_size, family=font_family),
+        ),
+        xaxis_title="YH-poäng",
+        yaxis_title="Antal kurser",
+        font=dict(family=font_family),
+    )
+    fig.update_xaxes(
+        showline=True, linecolor=GRAY_12,
+        tickfont=dict(size=xtick_size, color=GRAY_12, family=font_family),
+        zeroline=False,
+        automargin=True,
+    )
+    fig.update_yaxes(
+        showline=True, linecolor=GRAY_12,
+        tickfont=dict(size=ytick_size, color=GRAY_12, family=font_family),
+        zeroline=False,
+        gridcolor="#eee",
+        automargin=True,
     )
     return fig
