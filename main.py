@@ -44,8 +44,26 @@ approved_courses = int(stats["Beviljade"])
 approval_rate_str = f"{stats['Beviljandegrad (%)']:.1f}%"
 requested_places = int(stats.get("Ansökta platser", 0))
 approved_places = int(stats.get("Beviljade platser", 0))
+
+# Centralize chart font settings so both initial and reactive renders match
+CHART_XTICK_SIZE = 11
+CHART_YTICK_SIZE = 12
+CHART_TITLE_SIZE = 18
+CHART_LEGEND_SIZE = 12
+CHART_LABEL_SIZE = 11
+CHART_FONT_FAMILY = "Arial"
+
 # initial chart for selected county
-county_chart = education_area_chart(summary, selected_county)
+county_chart = education_area_chart(
+    summary,
+    selected_county,
+    xtick_size=CHART_XTICK_SIZE,
+    ytick_size=CHART_YTICK_SIZE,
+    title_size=CHART_TITLE_SIZE,
+    legend_font_size=CHART_LEGEND_SIZE,
+    label_font_size=CHART_LABEL_SIZE,
+    font_family=CHART_FONT_FAMILY,
+)
 
 def on_county_change(state, var_name=None, var_value=None):
     if var_name != "selected_county":
@@ -63,7 +81,16 @@ def on_county_change(state, var_name=None, var_value=None):
         state.approval_rate_str = f"{state.stats['Beviljandegrad (%)']:.1f}%"
         state.requested_places = int(state.stats.get("Ansökta platser", 0))
         state.approved_places = int(state.stats.get("Beviljade platser", 0))
-        state.county_chart = education_area_chart(state.summary, state.selected_county)
+        state.county_chart = education_area_chart(
+            state.summary,
+            state.selected_county,
+            xtick_size=CHART_XTICK_SIZE,
+            ytick_size=CHART_YTICK_SIZE,
+            title_size=CHART_TITLE_SIZE,
+            legend_font_size=CHART_LEGEND_SIZE,
+            label_font_size=CHART_LABEL_SIZE,
+            font_family=CHART_FONT_FAMILY,
+        )
     except Exception as e:
         logging.warning("on_county_change failed for '%s': %s", selected, e)
         state.df_selected_county = pd.DataFrame()
@@ -74,8 +101,16 @@ def on_county_change(state, var_name=None, var_value=None):
         state.approval_rate_str = "0.0%"
         state.requested_places = 0
         state.approved_places = 0
-        state.county_chart = education_area_chart(state.summary, state.selected_county)
-
+        state.county_chart = education_area_chart(
+            state.summary,
+            state.selected_county,
+            xtick_size=CHART_XTICK_SIZE,
+            ytick_size=CHART_YTICK_SIZE,
+            title_size=CHART_TITLE_SIZE,
+            legend_font_size=CHART_LEGEND_SIZE,
+            label_font_size=CHART_LABEL_SIZE,
+            font_family=CHART_FONT_FAMILY,
+        )
     _safe_refresh(
         state,
         "selected_county",
