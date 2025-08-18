@@ -329,6 +329,7 @@ def credits_histogram(
     ytick_size: int = 12,
     title_size: int = 18,
     legend_font_size: int = 12,
+    label_font_size: int = 11,
     font_family: str = "Arial",
 ) -> go.Figure:
     """
