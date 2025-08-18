@@ -40,3 +40,8 @@
         padding: 10px;
     }
 }
+
+.blue-value {
+    color: #4e73df;
+    font-weight: bold;
+}

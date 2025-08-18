@@ -16,6 +16,7 @@ from frontend.charts import (
 )
 
 from utils.chart_style import CHART_STYLE
+from utils.constants import BLUE_1
 
 logging.basicConfig(level=logging.WARNING)
 
