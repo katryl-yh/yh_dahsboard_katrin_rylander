@@ -211,12 +211,21 @@ def compute_national_stats(df: pd.DataFrame) -> dict:
     total = int(len(df))
     approved = int(decisions.get(BESLUT_BEVILJAD, 0))
     rate = f"{(approved / total * 100):.1f}%" if total else "0%"
+
+    requested_places = _sum_col_numeric(df, COL_TOTAL_SOKTA)
+    approved_places = _sum_col_numeric(df, COL_TOTAL_BEVILJADE_PLATSER)
+    
+    # Calculate the places approval rate
+    places_rate = (approved_places / requested_places * 100) if requested_places > 0 else 0
+    places_rate_str = f"{places_rate:.1f}%"
+
     return {
         "national_total_courses": total,
         "national_approved_courses": approved,
         "national_approval_rate_str": rate,
-        "national_requested_places": _sum_col_numeric(df, COL_TOTAL_SOKTA),
-        "national_approved_places": _sum_col_numeric(df, COL_TOTAL_BEVILJADE_PLATSER),
+        "national_requested_places": requested_places,
+        "national_approved_places": approved_places,
+        "national_places_approval_rate_str": places_rate_str, 
     }
 
 def aggregate_approved_by_county(df: pd.DataFrame) -> pd.DataFrame:

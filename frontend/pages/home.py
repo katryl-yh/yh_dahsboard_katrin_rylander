@@ -29,6 +29,7 @@ national_approved_courses = nat.get("national_approved_courses", 0)
 national_approval_rate_str = nat.get("national_approval_rate_str", "0%")
 national_requested_places = nat.get("national_requested_places", 0)
 national_approved_places = nat.get("national_approved_places", 0)
+national_places_approval_rate_str = nat.get("national_places_approval_rate_str", "0.0%")
 
 # --- National map with approved courses per county ---
 sweden_map = build_sweden_map(
@@ -94,7 +95,7 @@ with tgb.Page() as home_page:
                         tgb.text("**{national_requested_places}**", mode="md")
                     with tgb.part(class_name="stat-card"):
                         tgb.text("#### Beviljandegrad (platser)", mode="md")
-                        #tgb.text("**{}**", mode="md")
+                        tgb.text("**{national_places_approval_rate_str}**", mode="md")
 
                 tgb.text("### Beviljade kurser i respektive län", mode="md")
                 with tgb.layout(columns="1 2"):
