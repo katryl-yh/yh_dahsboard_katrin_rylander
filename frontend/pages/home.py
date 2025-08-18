@@ -58,6 +58,7 @@ sweden_histogram = credits_histogram(
 with tgb.Page() as home_page:
     with tgb.part(class_name="container card stack-large"):
         tgb.navbar()
+
         with tgb.part(class_name="card"):
             tgb.text("# YH dashboard 2025 - ansökningsomgång för kurser", mode="md")
             tgb.text(
@@ -112,7 +113,7 @@ with tgb.Page() as home_page:
             tgb.text("### Historgram över YH-poäng för beviljade och avslanga kurser", mode="md")
             tgb.chart(figure="{sweden_histogram}", type="plotly")   
 
-Gui(home_page).run(
+""" Gui(home_page).run(
     port=8080,
     dark_mode=False,
     use_reloader=False,
@@ -127,4 +128,4 @@ Gui(home_page).run(
         "national_requested_places": national_requested_places,
         "national_approved_places": national_approved_places,
     },
-)
+) """
