@@ -8,6 +8,7 @@ def education_area_chart(
     county: str,
     height: int = 500,
     title: str | None = None,
+    show_title: bool = True,  # Added parameter
     # font controls (override from main.py)
     xtick_size: int = 12,
     ytick_size: int = 13,
@@ -21,26 +22,47 @@ def education_area_chart(
     Horizontal stacked bar chart per 'Utbildningsområde':
       - Beviljade (closest to the y-axis) + Avslag (stacked to the right) = Ansökta utbildningar.
       - 'Beviljandegrad' shown as a label next to the total length.
+      
+    Parameters:
+        df_summary: DataFrame with Utbildningsområde, Ansökta utbildningar, and Beviljade utbildningar
+        county: County name to show in the title
+        height: Chart height in pixels
+        title: Custom title (overrides default if provided)
+        show_title: Whether to display the title (default: True)
+        xtick_size: Font size for x-axis ticks
+        ytick_size: Font size for y-axis ticks
+        title_size: Font size for title
+        legend_font_size: Font size for legend
+        label_font_size: Font size for approval rate labels
+        font_family: Font family for all text
     """
     fig = go.Figure()
 
     required = {"Utbildningsområde", "Ansökta utbildningar", "Beviljade utbildningar"}
     if df_summary is None or len(df_summary) == 0 or not required.issubset(df_summary.columns):
-        fig.update_layout(
-            height=height,
-            plot_bgcolor="white",
-            paper_bgcolor="white",
-            title=dict(text=title or f"Ansökningar per utbildningsområde – {county}",
-                       font=dict(size=title_size, family=font_family)),
-            xaxis=dict(
+        layout_args = {
+            "height": height,
+            "plot_bgcolor": "white",
+            "paper_bgcolor": "white",
+            "margin": dict(l=120, r=30, t=80 if show_title else 20, b=40),
+            "xaxis": dict(
                 tickfont=dict(size=xtick_size, family=font_family, color=GRAY_12)
             ),
-            yaxis=dict(
+            "yaxis": dict(
                 tickfont=dict(size=ytick_size, family=font_family, color=GRAY_12)
             ),
-            legend=dict(font=dict(size=legend_font_size, family=font_family)),
+            "legend": dict(font=dict(size=legend_font_size, family=font_family)),
             **options
-        )
+        }
+        
+        # Only add title if show_title is True
+        if show_title:
+            layout_args["title"] = dict(
+                text=title or f"Ansökningar per utbildningsområde – {county}",
+                font=dict(size=title_size, family=font_family)
+            )
+            
+        fig.update_layout(**layout_args)
         return fig
 
     # Sort by total so the last row is the largest bar
@@ -90,40 +112,46 @@ def education_area_chart(
                 yanchor="middle"
             ))
 
-    fig.update_layout(
-        barmode="stack",
-        bargap=0.25,
-        margin=dict(l=120, r=30, t=80, b=40),
-        height=height,
-        plot_bgcolor="white",
-        paper_bgcolor="white",
-        showlegend=True,
-        legend=dict(
+    # Create layout arguments dictionary
+    layout_args = {
+        "barmode": "stack",
+        "bargap": 0.25,
+        "margin": dict(l=120, r=30, t=80 if show_title else 20, b=40),
+        "height": height,
+        "plot_bgcolor": "white",
+        "paper_bgcolor": "white",
+        "showlegend": True,
+        "legend": dict(
             orientation="h",
             yanchor="bottom", y=1.02,
             xanchor="right", x=1,
             font=dict(size=legend_font_size, family=font_family),
             traceorder="normal"  # legendrank controls order
         ),
-        title=dict(
-            text=title or f"Ansökningar per utbildningsområde – {county}",
-            font=dict(size=title_size, family=font_family)
-        ),
-        yaxis=dict(
+        "yaxis": dict(
             showline=True, linecolor=GRAY_12,
             tickfont=dict(color=GRAY_12, size=ytick_size, family=font_family),
             categoryorder="array", categoryarray=categories,
             automargin=True
         ),
-        xaxis=dict(
+        "xaxis": dict(
             showline=True, linecolor=GRAY_12,
             tickfont=dict(color=GRAY_12, size=xtick_size, family=font_family),
             rangemode="tozero",
             automargin=True
         ),
-        annotations=annotations,
+        "annotations": annotations,
         **options
-    )
+    }
+    
+    # Only add title if show_title is True
+    if show_title:
+        layout_args["title"] = dict(
+            text=title or f"Ansökningar per utbildningsområde – {county}",
+            font=dict(size=title_size, family=font_family)
+        )
+    
+    fig.update_layout(**layout_args)
     return fig
 
 def provider_education_area_chart(

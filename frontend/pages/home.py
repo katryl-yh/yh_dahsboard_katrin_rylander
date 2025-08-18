@@ -44,6 +44,7 @@ summary_sweden, _stats_sweden = get_statistics(df, county=None, label="Sverige")
 sweden_bar_chart = education_area_chart(
     summary_sweden,
     "Sverige",
+    show_title=False,
     **CHART_STYLE,
 )
 
@@ -110,7 +111,7 @@ with tgb.Page() as home_page:
 
                 tgb.text("### Fördelning av kurser per utbildningsområde", mode="md")
                 tgb.text(
-                        "Stapeldiagrammet är uppdelat i respektive utbildningsområde och visar på antalet beviljade kurser i blått och antalet avslag i grått.  \n",
+                        "Stapeldiagrammet är uppdelat i respektive utbildningsområde och visar på antalet beviljade kurser i blått och antalet avslag i grått.",
                         mode="md")
                 tgb.chart(figure="{sweden_bar_chart}", type="plotly")
                 tgb.text("### Historgram över YH-poäng för beviljade och avslanga kurser", mode="md")
