@@ -48,6 +48,7 @@ provider_places_approval_rate_str = provider_vm["provider_places_approval_rate_s
 provider_courses_summary_str = provider_vm["provider_courses_summary_str"]
 provider_courses_approval_rate_str = provider_vm["provider_courses_approval_rate_str"]
 provider_chart = provider_vm["provider_chart"]
+provider_histogram = provider_vm["provider_histogram"]
 
 def on_provider_change(state, var_name=None, var_value=None):
     if var_name != "selected_provider":
@@ -70,6 +71,7 @@ def on_provider_change(state, var_name=None, var_value=None):
         state.provider_courses_summary_str = vm["provider_courses_summary_str"]
         state.provider_courses_approval_rate_str = vm["provider_courses_approval_rate_str"]
         state.provider_chart = vm["provider_chart"]
+        state.provider_histogram = vm["provider_histogram"]
     except Exception as e:
         logging.warning("on_provider_change failed for '%s': %s", selected, e)
     _safe_refresh(
@@ -82,6 +84,7 @@ def on_provider_change(state, var_name=None, var_value=None):
         "provider_courses_summary_str",
         "provider_courses_approval_rate_str",
         "provider_chart",
+        "provider_histogram",
     )
 
 
@@ -124,9 +127,8 @@ with tgb.Page() as providers_page:
                         "Stapeldiagrammet är uppdelat i respektive utbildningsområde och visar på antalet beviljade kurser i blått och antalet avslag i grått.  \n",
                         mode="md")
                 tgb.chart(figure="{provider_chart}", type="plotly")
-                #tgb.text("### Histogram över YH-poäng för beviljade och avslagna kurser för {selected_provider}", mode="md")
-                #tgb.chart(figure="{county_histogram}", type="plotly")
-                
+                tgb.text("### Histogram över YH-poäng för beviljade och avslagna kurser för {selected_provider}", mode="md")
+                tgb.chart(figure="{provider_histogram}", type="plotly")
                 tgb.text("### Tabell över utbildningsanordnare", mode="md")
                 tgb.text(
                     "Tabellen är sorterad efter beviljade antal platser totalt, vilket innebär att vissa "

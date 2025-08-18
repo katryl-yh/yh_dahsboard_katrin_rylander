@@ -47,7 +47,22 @@ def compute_provider_view(
                 label_font_size=label_font_size,
                 font_family=font_family,
             ),
+            # Add provider histogram
+            provider_histogram=credits_histogram(
+                df,
+                None,  # No county filter
+                nbinsx=20,
+                show_title=False,
+                xtick_size=xtick_size,
+                ytick_size=ytick_size,
+                title_size=title_size,
+                legend_font_size=legend_font_size,
+                font_family=font_family,
+            ),
         )
+
+    # Filter df to only show this provider
+    provider_df = df[df["Anordnare namn"].astype(str).str.strip() == provider_norm]
 
     r = row.iloc[0]
     places_appr = int(r.get("Beviljade platser", 0))
@@ -74,6 +89,18 @@ def compute_provider_view(
             title_size=title_size,
             legend_font_size=legend_font_size,
             label_font_size=label_font_size,
+            font_family=font_family,
+        ),
+        # Add provider histogram with filtered dataframe
+        provider_histogram=credits_histogram(
+            provider_df,  # Use filtered dataframe for this provider only
+            None,  # No county filter
+            nbinsx=20,
+            show_title=False,
+            xtick_size=xtick_size,
+            ytick_size=ytick_size,
+            title_size=title_size,
+            legend_font_size=legend_font_size,
             font_family=font_family,
         ),
     )
