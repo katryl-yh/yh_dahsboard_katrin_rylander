@@ -22,15 +22,9 @@ from frontend.viewmodels import (
     compute_county_view
 )
 
-logging.basicConfig(level=logging.WARNING)
+from utils.chart_style import CHART_STYLE
 
-# Centralize chart font settings so both initial and reactive renders match
-CHART_XTICK_SIZE = 11
-CHART_YTICK_SIZE = 12
-CHART_TITLE_SIZE = 18
-CHART_LEGEND_SIZE = 12
-CHART_LABEL_SIZE = 11
-CHART_FONT_FAMILY = "Arial"
+logging.basicConfig(level=logging.WARNING)
 
 def _safe_refresh(state, *var_names):
     if hasattr(state, "refresh"):
@@ -57,16 +51,7 @@ national_approved_places = nat.get("national_approved_places", 0)
 # Initial county state (compute via view-model)
 all_counties = sorted(df["Län"].dropna().unique().tolist())
 selected_county = all_counties[0] if all_counties else ""
-county_vm = compute_county_view(
-    df,
-    selected_county,
-    xtick_size=CHART_XTICK_SIZE,
-    ytick_size=CHART_YTICK_SIZE,
-    title_size=CHART_TITLE_SIZE,
-    legend_font_size=CHART_LEGEND_SIZE,
-    label_font_size=CHART_LABEL_SIZE,
-    font_family=CHART_FONT_FAMILY,
-)
+county_vm = compute_county_view(df, selected_county, **CHART_STYLE)
 df_selected_county = county_vm["df_selected_county"]
 summary = county_vm["summary"]
 stats = county_vm["stats"]
@@ -95,12 +80,7 @@ summary_sweden, _stats_sweden = get_statistics(df, county=None, label="Sverige")
 sweden_bar_chart = education_area_chart(
     summary_sweden,
     "Sverige",
-    xtick_size=CHART_XTICK_SIZE,
-    ytick_size=CHART_YTICK_SIZE,
-    title_size=CHART_TITLE_SIZE,
-    legend_font_size=CHART_LEGEND_SIZE,
-    label_font_size=CHART_LABEL_SIZE,
-    font_family=CHART_FONT_FAMILY,
+    **CHART_STYLE,
 )
 
 # --- National histogram (reuse credits_histogram with county=None) ---
@@ -108,23 +88,14 @@ sweden_histogram = credits_histogram(
     df,
     county=None,
     nbinsx=20,
-    xtick_size=CHART_XTICK_SIZE,
-    ytick_size=CHART_YTICK_SIZE,
-    title_size=CHART_TITLE_SIZE,
-    legend_font_size=CHART_LEGEND_SIZE,
-    font_family=CHART_FONT_FAMILY,
+    **CHART_STYLE,
 )
 
 # initial chart for selected county
 county_chart = education_area_chart(
     summary,
     selected_county,
-    xtick_size=CHART_XTICK_SIZE,
-    ytick_size=CHART_YTICK_SIZE,
-    title_size=CHART_TITLE_SIZE,
-    legend_font_size=CHART_LEGEND_SIZE,
-    label_font_size=CHART_LABEL_SIZE,
-    font_family=CHART_FONT_FAMILY,
+    **CHART_STYLE,
 )
 
 # Initial histogram for selected county (reuse same function)
@@ -132,11 +103,7 @@ county_histogram = credits_histogram(
     df,
     selected_county,
     nbinsx=20,
-    xtick_size=CHART_XTICK_SIZE,
-    ytick_size=CHART_YTICK_SIZE,
-    title_size=CHART_TITLE_SIZE,
-    legend_font_size=CHART_LEGEND_SIZE,
-    font_family=CHART_FONT_FAMILY,
+    **CHART_STYLE,
 )
 
 # ---------- Provider state (initial) ----------
@@ -146,12 +113,7 @@ provider_vm = compute_provider_view(
     df,
     df_providers,
     selected_provider,
-    xtick_size=CHART_XTICK_SIZE,
-    ytick_size=CHART_YTICK_SIZE,
-    title_size=CHART_TITLE_SIZE,
-    legend_font_size=CHART_LEGEND_SIZE,
-    label_font_size=CHART_LABEL_SIZE,
-    font_family=CHART_FONT_FAMILY,
+    **CHART_STYLE,
 )
 provider_rank_places = provider_vm["provider_rank_places"]
 provider_rank_places_summary_str = provider_vm["provider_rank_places_summary_str"]
@@ -173,12 +135,7 @@ def on_provider_change(state, var_name=None, var_value=None):
             state.df,
             state.df_providers if hasattr(state, "df_providers") else df_providers,
             selected,
-            xtick_size=CHART_XTICK_SIZE,
-            ytick_size=CHART_YTICK_SIZE,
-            title_size=CHART_TITLE_SIZE,
-            legend_font_size=CHART_LEGEND_SIZE,
-            label_font_size=CHART_LABEL_SIZE,
-            font_family=CHART_FONT_FAMILY,
+            **CHART_STYLE,
         )
         state.provider_rank_places = vm["provider_rank_places"]
         state.provider_rank_places_summary_str = vm["provider_rank_places_summary_str"]
@@ -211,16 +168,7 @@ def on_county_change(state, var_name=None, var_value=None):
         return
     state.selected_county = selected
     try:
-        vm = compute_county_view(
-            state.df,
-            state.selected_county,
-            xtick_size=CHART_XTICK_SIZE,
-            ytick_size=CHART_YTICK_SIZE,
-            title_size=CHART_TITLE_SIZE,
-            legend_font_size=CHART_LEGEND_SIZE,
-            label_font_size=CHART_LABEL_SIZE,
-            font_family=CHART_FONT_FAMILY,
-        )
+        vm = compute_county_view(df, state.selected_county, **CHART_STYLE)
         state.df_selected_county = vm["df_selected_county"]
         state.summary = vm["summary"]
         state.stats = vm["stats"]
