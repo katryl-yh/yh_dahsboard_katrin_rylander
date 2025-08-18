@@ -104,9 +104,9 @@ with tgb.Page() as providers_page:
                     mode="md")
                 tgb.table("{df_providers}", width="100%")
 
-                tgb.text("## Statistik per utvald Utbildningsanordnare.", mode="md")
+                tgb.text("## Statistik per Utbildningsanordnare.", mode="md")
                 tgb.text(
-                    "Välj en Utbildningsanordnare för att se statistik och KPIer.",
+                    "Välj en utbildningsanordnare för att se statistik och KPIer.",
                     mode="md")
                 tgb.selector("{selected_provider}", lov=all_providers, dropdown=True, on_change=on_provider_change)
             
@@ -131,12 +131,12 @@ with tgb.Page() as providers_page:
                         tgb.text("##### Beviljandegrad (kurser)", mode="md")
                         tgb.text("**{provider_courses_approval_rate_str}**", mode="md")
 
-                tgb.text("### Fördelning av kurser per utbildningsområde för {selected_provider}", mode="md")
+                tgb.text("### Fördelning av beviljade och avslagna kursansökningar per utbildningsområde för {selected_provider}", mode="md")
                 tgb.text(
                         "Stapeldiagrammet är uppdelat i respektive utbildningsområde och visar på antalet beviljade kurser i blått och antalet avslag i grått.  \n",
                         mode="md")
                 tgb.chart(figure="{provider_chart}", type="plotly")
-                #tgb.text("### Histogram över YH-poäng för beviljade och avslanga kurser för {selected_provider}", mode="md")
+                #tgb.text("### Histogram över YH-poäng för beviljade och avslagna kurser för {selected_provider}", mode="md")
                 #tgb.chart(figure="{county_histogram}", type="plotly")
                 
                 with tgb.layout(columns="1"):
