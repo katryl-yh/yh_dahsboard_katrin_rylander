@@ -53,6 +53,7 @@ sweden_histogram = credits_histogram(
     df,
     county=None,
     nbinsx=20,
+    show_title=False,
     **CHART_STYLE,
 )
 
@@ -109,12 +110,12 @@ with tgb.Page() as home_page:
                     with tgb.part(class_name="stat-card"):
                         tgb.chart(figure="{sweden_map}", type="plotly")
 
-                tgb.text("### Fördelning av kurser per utbildningsområde", mode="md")
+                tgb.text("### Fördelning av beviljade och avslagna kurser ansökningar per utbildningsområde", mode="md")
                 tgb.text(
                         "Stapeldiagrammet är uppdelat i respektive utbildningsområde och visar på antalet beviljade kurser i blått och antalet avslag i grått.",
                         mode="md")
                 tgb.chart(figure="{sweden_bar_chart}", type="plotly")
-                tgb.text("### Historgram över YH-poäng för beviljade och avslanga kurser", mode="md")
+                tgb.text("### Historgram över YH-poäng för beviljade och avslagna kurser", mode="md")
                 tgb.chart(figure="{sweden_histogram}", type="plotly")   
 
 """ Gui(home_page).run(

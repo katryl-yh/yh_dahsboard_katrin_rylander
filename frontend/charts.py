@@ -359,46 +359,66 @@ def credits_histogram(
     legend_font_size: int = 12,
     label_font_size: int = 11,
     font_family: str = "Arial",
+    show_title: bool = True,      # Add this parameter
+    custom_title: str | None = None,  # Add this parameter
 ) -> go.Figure:
     """
     Stacked histogram of YH credits for approved (blue) and rejected (gray).
     If county is None => national (Sverige), else filters to the specified county.
+    
+    Parameters:
+        df: DataFrame with the data
+        county: County to filter on, None for national data (Sverige)
+        nbinsx: Number of bins for histogram
+        xtick_size, ytick_size: Font sizes for axis ticks
+        title_size: Font size for chart title
+        legend_font_size: Font size for legend
+        label_font_size: Font size for labels
+        font_family: Font family for all text
+        show_title: Whether to display a title (set to False to hide)
+        custom_title: Optional custom title text (overrides default if provided)
     """
     fig = go.Figure()
     if df is None or df.empty:
-        fig.update_layout(
-            barmode="stack",
-            bargap=0.25,
-            height=500,
-            margin=dict(l=120, r=30, t=80, b=40),
-            plot_bgcolor="white",
-            paper_bgcolor="white",
-            showlegend=True,
-            legend=dict(
+        layout_args = {
+            "barmode": "stack",
+            "bargap": 0.25,
+            "height": 500,
+            "margin": dict(l=120, r=30, t=80 if show_title else 20, b=40),
+            "plot_bgcolor": "white",
+            "paper_bgcolor": "white",
+            "showlegend": True,
+            "legend": dict(
                 orientation="h",
                 yanchor="bottom", y=1.02,
                 xanchor="right", x=1.0,
                 font=dict(size=legend_font_size, family=font_family),
                 traceorder="normal",
             ),
-            title=dict(
-                text="Fördelning av YH-poäng",
-                font=dict(size=title_size, family=font_family),
-            ),
-            xaxis=dict(
+            "xaxis": dict(
                 showline=True, linecolor=GRAY_12,
                 tickfont=dict(size=xtick_size, color=GRAY_12, family=font_family),
                 zeroline=False,
                 automargin=True,
+                showgrid=False,  # Remove horizontal grid lines
             ),
-            yaxis=dict(
+            "yaxis": dict(
                 showline=True, linecolor=GRAY_12,
                 tickfont=dict(size=ytick_size, color=GRAY_12, family=font_family),
                 zeroline=False,
-                gridcolor="#eee",
                 automargin=True,
+                showgrid=False,  # Remove vertical grid lines
             ),
-        )
+        }
+        
+        # Only add title if requested
+        if show_title:
+            layout_args["title"] = dict(
+                text=custom_title or "Fördelning av YH-poäng",
+                font=dict(size=title_size, family=font_family),
+            )
+            
+        fig.update_layout(**layout_args)
         return fig
 
     d = df.copy()
@@ -408,69 +428,81 @@ def credits_histogram(
         d = d[d["Län"] == scope_label]
 
     if d.empty:
-        fig.update_layout(
-            barmode="stack",
-            bargap=0.25,
-            height=500,
-            margin=dict(l=120, r=30, t=80, b=40),
-            plot_bgcolor="white",
-            paper_bgcolor="white",
-            showlegend=True,
-            legend=dict(
+        layout_args = {
+            "barmode": "stack",
+            "bargap": 0.25,
+            "height": 500,
+            "margin": dict(l=120, r=30, t=80 if show_title else 20, b=40),
+            "plot_bgcolor": "white",
+            "paper_bgcolor": "white",
+            "showlegend": True,
+            "legend": dict(
                 orientation="h",
                 yanchor="bottom", y=1.02,
                 xanchor="right", x=1.0,
                 font=dict(size=legend_font_size, family=font_family),
                 traceorder="normal",
             ),
-            title=dict(
-                text=f"Fördelning av YH-poäng i {scope_label}",
-                font=dict(size=title_size, family=font_family),
-            ),
-            xaxis=dict(
+            "xaxis": dict(
                 showline=True, linecolor=GRAY_12,
                 tickfont=dict(size=xtick_size, color=GRAY_12, family=font_family),
                 zeroline=False,
                 automargin=True,
+                showgrid=False,  # Remove horizontal grid lines
             ),
-            yaxis=dict(
+            "yaxis": dict(
                 showline=True, linecolor=GRAY_12,
                 tickfont=dict(size=ytick_size, color=GRAY_12, family=font_family),
                 zeroline=False,
-                gridcolor="#eee",
                 automargin=True,
+                showgrid=False,  # Remove vertical grid lines
             ),
-        )
+        }
+        
+        # Only add title if requested
+        if show_title:
+            layout_args["title"] = dict(
+                text=custom_title or f"Fördelning av YH-poäng i {scope_label}",
+                font=dict(size=title_size, family=font_family),
+            )
+            
+        fig.update_layout(**layout_args)
         return fig
 
     credits_col = "YH-poäng" if "YH-poäng" in d.columns else ("Poäng" if "Poäng" in d.columns else None)
     if credits_col is None:
-        fig.update_layout(
-            barmode="stack",
-            bargap=0.25,
-            height=500,
-            margin=dict(l=120, r=30, t=80, b=40),
-            plot_bgcolor="white",
-            paper_bgcolor="white",
-            showlegend=False,
-            title=dict(
-                text=f"Fördelning av YH-poäng i {scope_label} (saknar kolumn för poäng)",
-                font=dict(size=title_size, family=font_family),
-            ),
-            xaxis=dict(
+        layout_args = {
+            "barmode": "stack",
+            "bargap": 0.25,
+            "height": 500,
+            "margin": dict(l=120, r=30, t=80 if show_title else 20, b=40),
+            "plot_bgcolor": "white",
+            "paper_bgcolor": "white",
+            "showlegend": False,
+            "xaxis": dict(
                 showline=True, linecolor=GRAY_12,
                 tickfont=dict(size=xtick_size, color=GRAY_12, family=font_family),
                 zeroline=False,
                 automargin=True,
+                showgrid=False,  # Remove horizontal grid lines
             ),
-            yaxis=dict(
+            "yaxis": dict(
                 showline=True, linecolor=GRAY_12,
                 tickfont=dict(size=ytick_size, color=GRAY_12, family=font_family),
                 zeroline=False,
-                gridcolor="#eee",
                 automargin=True,
+                showgrid=False,  # Remove vertical grid lines
             ),
-        )
+        }
+        
+        # Only add title if requested
+        if show_title:
+            layout_args["title"] = dict(
+                text=custom_title or f"Fördelning av YH-poäng i {scope_label} (saknar kolumn för poäng)",
+                font=dict(size=title_size, family=font_family),
+            )
+            
+        fig.update_layout(**layout_args)
         return fig
 
     approved = d[d["Beslut"] == "Beviljad"][credits_col].dropna()
@@ -499,41 +531,52 @@ def credits_histogram(
         legendrank=2,
     ))
 
-    fig.update_layout(
-        barmode="stack",
-        bargap=0.25,
-        height=500,
-        margin=dict(l=120, r=30, t=80, b=40),
-        plot_bgcolor="white",
-        paper_bgcolor="white",
-        showlegend=True,
-        legend=dict(
+    # Create layout arguments dictionary
+    layout_args = {
+        "barmode": "stack",
+        "bargap": 0.25,
+        "height": 500,
+        "margin": dict(l=120, r=30, t=80 if show_title else 20, b=40),
+        "plot_bgcolor": "white",
+        "paper_bgcolor": "white",
+        "showlegend": True,
+        "legend": dict(
             orientation="h",
             yanchor="bottom", y=1.02,
             xanchor="right", x=1.0,
             font=dict(size=legend_font_size, family=font_family),
             traceorder="normal",
         ),
-        title=dict(
-            text=f"Fördelning av YH-poäng i {scope_label}"
-                 f"<br><sup>Beviljandegrad: {approval_rate:.1f}% ({approved_count} av {total_courses} kurser)</sup>",
-            font=dict(size=title_size, family=font_family),
+        "xaxis_title": "YH-poäng",
+        "yaxis_title": "Antal kurser",
+        "font": dict(family=font_family),
+        "xaxis": dict(
+            showline=True, linecolor=GRAY_12,
+            tickfont=dict(size=xtick_size, color=GRAY_12, family=font_family),
+            zeroline=False,
+            automargin=True,
+            showgrid=False,  # Remove horizontal grid lines
         ),
-        xaxis_title="YH-poäng",
-        yaxis_title="Antal kurser",
-        font=dict(family=font_family),
-    )
-    fig.update_xaxes(
-        showline=True, linecolor=GRAY_12,
-        tickfont=dict(size=xtick_size, color=GRAY_12, family=font_family),
-        zeroline=False,
-        automargin=True,
-    )
-    fig.update_yaxes(
-        showline=True, linecolor=GRAY_12,
-        tickfont=dict(size=ytick_size, color=GRAY_12, family=font_family),
-        zeroline=False,
-        gridcolor="#eee",
-        automargin=True,
-    )
+        "yaxis": dict(
+            showline=True, linecolor=GRAY_12,
+            tickfont=dict(size=ytick_size, color=GRAY_12, family=font_family),
+            zeroline=False,
+            showgrid=False,  # Remove vertical grid lines
+            automargin=True,
+        ),
+    }
+    
+    # Only add title if requested
+    if show_title:
+        title_text = custom_title
+        if title_text is None:
+            title_text = f"Fördelning av YH-poäng i {scope_label}"
+            title_text += f"<br><sup>Beviljandegrad: {approval_rate:.1f}% ({approved_count} av {total_courses} kurser)</sup>"
+            
+        layout_args["title"] = dict(
+            text=title_text,
+            font=dict(size=title_size, family=font_family),
+        )
+    
+    fig.update_layout(**layout_args)
     return fig
