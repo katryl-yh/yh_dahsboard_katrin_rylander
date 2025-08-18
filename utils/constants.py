@@ -11,6 +11,17 @@ EXCEL_RESULTS_SHEET = "Lista ansökningar"
 EXCEL_APPS_FILE = "inkomna-ansokningar-2025-for-kurser.xlsx"
 EXCEL_APPS_SHEET = "Lista ansökningar"
 
+# Data column names
+COL_LAN = "Län"
+COL_BESLUT = "Beslut"
+COL_ANORDNARE = "Anordnare namn"
+COL_CREDITS = "YH-poäng"
+COL_EDUCATION_AREA = "Utbildningsområde"
+
+# Decision values
+BESLUT_BEVILJAD = "Beviljad"
+BESLUT_AVSLAG = "Avslag"
+
 # Columns & prefixes
 REQUIRED_COLUMNS = {"Län", "Beslut", "Utbildningsområde"}
 KEY_COL = "Diarienummer"

@@ -14,6 +14,14 @@ from utils.constants import (
     EXCEL_RESULTS_SHEET,
     EXCEL_APPS_FILE,
     EXCEL_APPS_SHEET,
+    COL_LAN, 
+    COL_BESLUT, 
+    COL_ANORDNARE, 
+    COL_EDUCATION_AREA,
+    BESLUT_BEVILJAD, 
+    BESLUT_AVSLAG,
+    COL_TOTAL_SOKTA, 
+    COL_TOTAL_BEVILJADE_PLATSER,
     REQUIRED_COLUMNS,
     KEY_COL,
     SOKT_PREFIX,
@@ -148,16 +156,16 @@ def get_statistics(df_or_filtered: pd.DataFrame, county: str | None = None, labe
 
     if county is not None:
         sel = str(county).strip()
-        scope_df = df_or_filtered[df_or_filtered["Län"].astype(str).str.strip() == sel].copy()
+        scope_df = df_or_filtered[df_or_filtered[COL_LAN].astype(str).str.strip() == sel].copy()
         scope_label = label or sel
     else:
         scope_df = df_or_filtered.copy()
-        uniq = scope_df["Län"].dropna().unique().tolist()
+        uniq = scope_df[COL_LAN].dropna().unique().tolist()
         scope_label = label or (uniq[0] if len(uniq) == 1 else "Sverige")
 
     total_courses = int(len(scope_df))
-    approved_courses = int((scope_df["Beslut"] == "Beviljad").sum())
-    rejected_courses = int((scope_df["Beslut"] == "Avslag").sum())
+    approved_courses = int((scope_df[COL_BESLUT] == BESLUT_BEVILJAD).sum())
+    rejected_courses = int((scope_df[COL_BESLUT] == BESLUT_AVSLAG).sum())
     approval_rate = round((approved_courses / total_courses) * 100, 1) if total_courses else 0.0
 
     stats = {
@@ -177,14 +185,13 @@ def get_statistics(df_or_filtered: pd.DataFrame, county: str | None = None, labe
         return summary, stats
 
     total_series = (
-        scope_df.groupby("Utbildningsområde").size().rename("Ansökta utbildningar")
+        total_series := (scope_df.groupby(COL_EDUCATION_AREA).size().rename("Ansökta utbildningar"))
     )
-    approved_series = (
-        scope_df[scope_df["Beslut"] == "Beviljad"]
-        .groupby("Utbildningsområde")
-        .size()
-        .rename("Beviljade utbildningar")
-    )
+    approved_series = (scope_df[scope_df[COL_BESLUT] == BESLUT_BEVILJAD]
+                       .groupby(COL_EDUCATION_AREA)
+                       .size()
+                       .rename("Beviljade utbildningar")
+                       )
 
     summary = (
         pd.concat([total_series, approved_series], axis=1)
@@ -200,9 +207,9 @@ def get_statistics(df_or_filtered: pd.DataFrame, county: str | None = None, labe
     return summary, stats
 
 def compute_national_stats(df: pd.DataFrame) -> dict:
-    decisions = df["Beslut"].value_counts()
+    decisions = df[COL_BESLUT].value_counts()
     total = int(len(df))
-    approved = int(decisions.get("Beviljad", 0))
+    approved = int(decisions.get(BESLUT_BEVILJAD, 0))
     rate = f"{(approved / total * 100):.1f}%" if total else "0%"
     return {
         "national_total_courses": total,
@@ -217,14 +224,14 @@ def aggregate_approved_by_county(df: pd.DataFrame) -> pd.DataFrame:
     Returns a DataFrame with columns ['Län','Beviljade'] sorted by Beviljade desc, Län asc.
     """
     return (
-        df.loc[df["Län"] != "Flera kommuner"]
-          .groupby("Län")["Beslut"]
-          .apply(lambda s: (s == "Beviljad").sum())
-          .astype("int64")
-          .reset_index(name="Beviljade")
-          .sort_values(["Beviljade", "Län"], ascending=[False, True])
-          .reset_index(drop=True)
-    )
+        df.loc[df[COL_LAN] != "Flera kommuner"]
+        .groupby(COL_LAN)[COL_BESLUT]
+        .apply(lambda s: (s == BESLUT_BEVILJAD).sum())
+        .astype("int64")
+        .reset_index(name="Beviljade")
+        .sort_values(["Beviljade", COL_LAN], ascending=[False, True])
+        .reset_index(drop=True)
+)
 
 def load_region_geojson(geojson_path: str | Path) -> dict:
     geojson_path = Path(geojson_path)
@@ -267,8 +274,8 @@ def summarize_providers(df: pd.DataFrame, provider_col: str = "Anordnare namn") 
     """
     if provider_col not in df.columns:
         raise ValueError(f"summarize_providers(): missing column '{provider_col}' in df")
-    if "Beslut" not in df.columns:
-        raise ValueError("summarize_providers(): missing column 'Beslut' in df")
+    if COL_BESLUT not in df.columns:
+        raise ValueError(f"summarize_providers(): missing column '{COL_BESLUT}' in df")
 
     # Resolve granted-places column
     granted_candidates = [
