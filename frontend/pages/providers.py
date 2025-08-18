@@ -87,61 +87,62 @@ def on_provider_change(state, var_name=None, var_value=None):
 
 # UI
 with tgb.Page() as providers_page:
-    with tgb.part(class_name="container card stack-large"):
-        tgb.navbar()
+    with tgb.part(class_name="page-container"):
+        with tgb.part(class_name="dashboard-content card stack-large"):
+            tgb.navbar()
 
-        with tgb.part(class_name="card"):
-            tgb.text("# YH dashboard 2025 - ansökningsomgång för kurser", mode="md")
-            tgb.text(
-                "Denna dashboard syftar till att vara ett verktyg för intressenter inom yrkeshögskola att läsa av KPIer för olika utbildningsanordnare.  \n"
-                "För utbildningsanordnare skulle man exempelvis kunna se vad konkurrenterna ansökt och ta inspiration från dem.",
-                mode="md",
-            )
-            tgb.text(
-                "Tabellen är sorterad efter beviljade antal platser totalt, vilket innebär att vissa"
-                "anordnare fått högre värde på andra kolumner, men lägre plats i tabellen. ",
-                mode="md")
-            tgb.table("{df_providers}", width="100%")
-
-            tgb.text("## Statistik per utvald Utbildningsanordnare.", mode="md")
-            tgb.text(
-                "Välj en Utbildningsanordnare för att se statistik och KPIer.",
-                mode="md")
-            tgb.selector("{selected_provider}", lov=all_providers, dropdown=True, on_change=on_provider_change)
-        
-            with tgb.layout(columns="1 1 1"):
-                with tgb.part(class_name="stat-card"):
-                    tgb.text("##### Ranking beviljade platser", mode="md")
-                    tgb.text("**{provider_rank_places_summary_str}**", mode="md")
-                with tgb.part(class_name="stat-card"):
-                    tgb.text("##### Platser: beviljade av sökta", mode="md")
-                    tgb.text("**{provider_places_summary_str}**", mode="md")
-                with tgb.part(class_name="stat-card"):
-                    tgb.text("##### Beviljandegrad (platser)", mode="md")
-                    tgb.text("**{provider_places_approval_rate_str}**", mode="md")
-            with tgb.layout(columns="1 1 1"):
-                with tgb.part(class_name="stat-card"):
-                    tgb.text("##### Ranking beviljade kurser", mode="md")
-                    #tgb.text("**{provider_rank_courses_summary_str}**", mode="md")
-                with tgb.part(class_name="stat-card"):
-                    tgb.text("##### Kurser: beviljade av sökta", mode="md")
-                    tgb.text("**{provider_courses_summary_str}**", mode="md")
-                with tgb.part(class_name="stat-card"):
-                    tgb.text("##### Beviljandegrad (kurser)", mode="md")
-                    tgb.text("**{provider_courses_approval_rate_str}**", mode="md")
-
-            tgb.text("### Fördelning av kurser per utbildningsområde för {selected_provider}", mode="md")
-            tgb.text(
-                    "Stapeldiagrammet är uppdelat i respektive utbildningsområde och visar på antalet beviljade kurser i blått och antalet avslag i grått.  \n",
+            with tgb.part(class_name="card"):
+                tgb.text("# YH dashboard 2025 - ansökningsomgång för kurser", mode="md")
+                tgb.text(
+                    "Denna dashboard syftar till att vara ett verktyg för intressenter inom yrkeshögskola att läsa av KPIer för olika utbildningsanordnare.  \n"
+                    "För utbildningsanordnare skulle man exempelvis kunna se vad konkurrenterna ansökt och ta inspiration från dem.",
+                    mode="md",
+                )
+                tgb.text(
+                    "Tabellen är sorterad efter beviljade antal platser totalt, vilket innebär att vissa"
+                    "anordnare fått högre värde på andra kolumner, men lägre plats i tabellen. ",
                     mode="md")
-            tgb.chart(figure="{provider_chart}", type="plotly")
-            #tgb.text("### Histogram över YH-poäng för beviljade och avslanga kurser för {selected_provider}", mode="md")
-            #tgb.chart(figure="{county_histogram}", type="plotly")
+                tgb.table("{df_providers}", width="100%")
+
+                tgb.text("## Statistik per utvald Utbildningsanordnare.", mode="md")
+                tgb.text(
+                    "Välj en Utbildningsanordnare för att se statistik och KPIer.",
+                    mode="md")
+                tgb.selector("{selected_provider}", lov=all_providers, dropdown=True, on_change=on_provider_change)
             
-            with tgb.layout(columns="1"):
-                    with tgb.part(class_name="table-container"):
-                        tgb.text("Rå data för {selected_provider}", mode="md")
-                        #tgb.table("{}", width="100%")
+                with tgb.layout(columns="1 1 1"):
+                    with tgb.part(class_name="stat-card"):
+                        tgb.text("##### Ranking beviljade platser", mode="md")
+                        tgb.text("**{provider_rank_places_summary_str}**", mode="md")
+                    with tgb.part(class_name="stat-card"):
+                        tgb.text("##### Platser: beviljade av sökta", mode="md")
+                        tgb.text("**{provider_places_summary_str}**", mode="md")
+                    with tgb.part(class_name="stat-card"):
+                        tgb.text("##### Beviljandegrad (platser)", mode="md")
+                        tgb.text("**{provider_places_approval_rate_str}**", mode="md")
+                with tgb.layout(columns="1 1 1"):
+                    with tgb.part(class_name="stat-card"):
+                        tgb.text("##### Ranking beviljade kurser", mode="md")
+                        #tgb.text("**{provider_rank_courses_summary_str}**", mode="md")
+                    with tgb.part(class_name="stat-card"):
+                        tgb.text("##### Kurser: beviljade av sökta", mode="md")
+                        tgb.text("**{provider_courses_summary_str}**", mode="md")
+                    with tgb.part(class_name="stat-card"):
+                        tgb.text("##### Beviljandegrad (kurser)", mode="md")
+                        tgb.text("**{provider_courses_approval_rate_str}**", mode="md")
+
+                tgb.text("### Fördelning av kurser per utbildningsområde för {selected_provider}", mode="md")
+                tgb.text(
+                        "Stapeldiagrammet är uppdelat i respektive utbildningsområde och visar på antalet beviljade kurser i blått och antalet avslag i grått.  \n",
+                        mode="md")
+                tgb.chart(figure="{provider_chart}", type="plotly")
+                #tgb.text("### Histogram över YH-poäng för beviljade och avslanga kurser för {selected_provider}", mode="md")
+                #tgb.chart(figure="{county_histogram}", type="plotly")
+                
+                with tgb.layout(columns="1"):
+                        with tgb.part(class_name="table-container"):
+                            tgb.text("Rå data för {selected_provider}", mode="md")
+                            #tgb.table("{}", width="100%")
         
     
 

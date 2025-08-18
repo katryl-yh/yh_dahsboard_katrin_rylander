@@ -84,57 +84,58 @@ def on_county_change(state, var_name=None, var_value=None):
 
 # UI
 with tgb.Page() as county_page:
-    with tgb.part(class_name="container card stack-large"):
-        tgb.navbar()
+    with tgb.part(class_name="page-container"):
+        with tgb.part(class_name="dashboard-content card stack-large"):
+            tgb.navbar()
 
-        with tgb.part(class_name="card"):
-            tgb.text("# YH dashboard 2025 - ansökningsomgång för kurser", mode="md")
-            tgb.text(
-                "Denna dashboard syftar till att vara ett verktyg för intressenter inom yrkeshögskola att läsa av KPIer för olika utbildningsanordnare.  \n"
-                "För utbildningsanordnare skulle man exempelvis kunna se vad konkurrenterna ansökt och ta inspiration från dem.",
-                mode="md",
-            )
-            tgb.text("## Statistik per utvald Län", mode="md")
-            tgb.text(
-                "Välj en Län för att se statistik och KPIer.", 
-                mode="md")
-
-            tgb.selector("{selected_county}", lov=all_counties, dropdown=True, on_change=on_county_change)
-
-            with tgb.layout(columns="1 1 1"):
-                with tgb.part(class_name="stat-card"):
-                    tgb.text("#### Beviljade", mode="md")
-                    tgb.text("**{approved_courses}**", mode="md")
-                with tgb.part(class_name="stat-card"):
-                    tgb.text("#### Ansökta kurser", mode="md")
-                    tgb.text("**{total_courses}**", mode="md")
-                with tgb.part(class_name="stat-card"):
-                    tgb.text("#### Beviljandegrad (kurser)", mode="md")
-                    tgb.text("**{approval_rate_str}**", mode="md")
-
-            with tgb.layout(columns="1 1 1"):
-                with tgb.part(class_name="stat-card"):
-                    tgb.text("#### Beviljade platser", mode="md")
-                    tgb.text("**{approved_places}**", mode="md")
-                with tgb.part(class_name="stat-card"):
-                    tgb.text("#### Ansökta platser", mode="md")
-                    tgb.text("**{requested_places}**", mode="md")
-                with tgb.part(class_name="stat-card"):
-                    tgb.text("#### Beviljandegrad (platser)", mode="md")
-                    #tgb.text("**{}**", mode="md")
-            
-            tgb.text("### Fördelning av kurser per utbildningsområde i {selected_county}", mode="md")
-            tgb.text(
-                    "Stapeldiagrammet är uppdelat i respektive utbildningsområde och visar på antalet beviljade kurser i blått och antalet avslag i grått.  \n",
+            with tgb.part(class_name="card"):
+                tgb.text("# YH dashboard 2025 - ansökningsomgång för kurser", mode="md")
+                tgb.text(
+                    "Denna dashboard syftar till att vara ett verktyg för intressenter inom yrkeshögskola att läsa av KPIer för olika utbildningsanordnare.  \n"
+                    "För utbildningsanordnare skulle man exempelvis kunna se vad konkurrenterna ansökt och ta inspiration från dem.",
+                    mode="md",
+                )
+                tgb.text("## Statistik per utvald Län", mode="md")
+                tgb.text(
+                    "Välj en Län för att se statistik och KPIer.", 
                     mode="md")
-            tgb.chart(figure="{county_chart}", type="plotly")
-            tgb.text("### Histogram över YH-poäng för beviljade och avslanga kurser i {selected_county}", mode="md")
-            tgb.chart(figure="{county_histogram}", type="plotly")
 
-            with tgb.layout(columns="1"):
-                with tgb.part(class_name="table-container"):
-                    tgb.text("Rå data för {selected_county}", mode="md")
-                    tgb.table("{df_selected_county}", width="100%")
+                tgb.selector("{selected_county}", lov=all_counties, dropdown=True, on_change=on_county_change)
+
+                with tgb.layout(columns="1 1 1"):
+                    with tgb.part(class_name="stat-card"):
+                        tgb.text("#### Beviljade", mode="md")
+                        tgb.text("**{approved_courses}**", mode="md")
+                    with tgb.part(class_name="stat-card"):
+                        tgb.text("#### Ansökta kurser", mode="md")
+                        tgb.text("**{total_courses}**", mode="md")
+                    with tgb.part(class_name="stat-card"):
+                        tgb.text("#### Beviljandegrad (kurser)", mode="md")
+                        tgb.text("**{approval_rate_str}**", mode="md")
+
+                with tgb.layout(columns="1 1 1"):
+                    with tgb.part(class_name="stat-card"):
+                        tgb.text("#### Beviljade platser", mode="md")
+                        tgb.text("**{approved_places}**", mode="md")
+                    with tgb.part(class_name="stat-card"):
+                        tgb.text("#### Ansökta platser", mode="md")
+                        tgb.text("**{requested_places}**", mode="md")
+                    with tgb.part(class_name="stat-card"):
+                        tgb.text("#### Beviljandegrad (platser)", mode="md")
+                        #tgb.text("**{}**", mode="md")
+                
+                tgb.text("### Fördelning av kurser per utbildningsområde i {selected_county}", mode="md")
+                tgb.text(
+                        "Stapeldiagrammet är uppdelat i respektive utbildningsområde och visar på antalet beviljade kurser i blått och antalet avslag i grått.  \n",
+                        mode="md")
+                tgb.chart(figure="{county_chart}", type="plotly")
+                tgb.text("### Histogram över YH-poäng för beviljade och avslanga kurser i {selected_county}", mode="md")
+                tgb.chart(figure="{county_histogram}", type="plotly")
+
+                with tgb.layout(columns="1"):
+                    with tgb.part(class_name="table-container"):
+                        tgb.text("Rå data för {selected_county}", mode="md")
+                        tgb.table("{df_selected_county}", width="100%")
 
 
 """ Gui(county_page).run(
