@@ -39,6 +39,7 @@ def compute_provider_view(
             provider_chart=provider_education_area_chart(
                 df,
                 provider_norm,
+                show_title=False,
                 xtick_size=xtick_size,
                 ytick_size=ytick_size,
                 title_size=title_size,
@@ -67,6 +68,7 @@ def compute_provider_view(
         provider_chart=provider_education_area_chart(
             df,
             provider_norm,
+            show_title=False,
             xtick_size=xtick_size,
             ytick_size=ytick_size,
             title_size=title_size,
@@ -101,6 +103,7 @@ def compute_county_view(
     county_chart = education_area_chart(
         summary,
         county_norm,
+        show_title=False,
         xtick_size=xtick_size,
         ytick_size=ytick_size,
         title_size=title_size,
@@ -112,6 +115,7 @@ def compute_county_view(
         df,
         county_norm,
         nbinsx=20,
+        show_title=False,
         xtick_size=xtick_size,
         ytick_size=ytick_size,
         title_size=title_size,
