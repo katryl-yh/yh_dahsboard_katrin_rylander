@@ -96,7 +96,7 @@ with tgb.Page() as county_page:
             )
             tgb.text("## Statistik per utvald Län", mode="md")
             tgb.text(
-                "På den sidan presenteras KPIer och information för utvalda Län", 
+                "Välj en Län för att se statistik och KPIer.", 
                 mode="md")
 
             tgb.selector("{selected_county}", lov=all_counties, dropdown=True, on_change=on_county_change)

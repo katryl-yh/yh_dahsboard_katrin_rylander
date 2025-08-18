@@ -1,13 +1,13 @@
 from taipy.gui import Gui
 from frontend.pages.home import home_page
 from frontend.pages.county import county_page
-#from frontend.pages.providers import providers_page
+from frontend.pages.providers import providers_page
 
 
 pages = {
     "home": home_page,
     "county": county_page,
-    #"providers": providers_page
+    "providers": providers_page,
 }
 
 

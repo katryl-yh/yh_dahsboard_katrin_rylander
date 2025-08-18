@@ -63,12 +63,13 @@ with tgb.Page() as home_page:
             tgb.text("# YH dashboard 2025 - ansökningsomgång för kurser", mode="md")
             tgb.text(
                 "Denna dashboard syftar till att vara ett verktyg för intressenter inom yrkeshögskola att läsa av KPIer för olika utbildningsanordnare.  \n"
-                "För utbildningsanordnare skulle man exempelvis kunna se vad konkurrenterna ansökt och ta inspiration från dem.",
+                "För utbildningsanordnare skulle man exempelvis kunna se vad konkurrenterna ansökt och ta inspiration från dem.  \n" 
+                "Dessutom kan det vara ett verktyg för utbildningsledarna att få en övergripande bild över ansökningsprocessen. ",
                 mode="md",
             )
             tgb.text("## Statistik för Sverige", mode="md")
             tgb.text(
-                "På hemsidan presenteras KPIer och information för hela ansökningsomgången för hela Sverige.  \n"
+                "Nedan presenteras KPIer och information för hela ansökningsomgången för hela Sverige."
                 "Detta innebär samtliga län, utbildningsområden och utbildningsanordnare i landet.", 
                 mode="md")
             
