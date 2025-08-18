@@ -92,18 +92,6 @@ with tgb.Page() as providers_page:
             tgb.navbar()
 
             with tgb.part(class_name="card"):
-                tgb.text("# YH dashboard 2025 - ansökningsomgång för kurser", mode="md")
-                tgb.text(
-                    "Denna dashboard syftar till att vara ett verktyg för intressenter inom yrkeshögskola att läsa av KPIer för olika utbildningsanordnare.  \n"
-                    "För utbildningsanordnare skulle man exempelvis kunna se vad konkurrenterna ansökt och ta inspiration från dem.",
-                    mode="md",
-                )
-                tgb.text(
-                    "Tabellen är sorterad efter beviljade antal platser totalt, vilket innebär att vissa"
-                    "anordnare fått högre värde på andra kolumner, men lägre plats i tabellen. ",
-                    mode="md")
-                tgb.table("{df_providers}", width="100%")
-
                 tgb.text("## Statistik per Utbildningsanordnare.", mode="md")
                 tgb.text(
                     "Välj en utbildningsanordnare för att se statistik och KPIer.",
@@ -139,10 +127,12 @@ with tgb.Page() as providers_page:
                 #tgb.text("### Histogram över YH-poäng för beviljade och avslagna kurser för {selected_provider}", mode="md")
                 #tgb.chart(figure="{county_histogram}", type="plotly")
                 
-                with tgb.layout(columns="1"):
-                        with tgb.part(class_name="table-container"):
-                            tgb.text("Rå data för {selected_provider}", mode="md")
-                            #tgb.table("{}", width="100%")
+                tgb.text("### Tabell över utbildningsanordnare", mode="md")
+                tgb.text(
+                    "Tabellen är sorterad efter beviljade antal platser totalt, vilket innebär att vissa "
+                    "anordnare fått högre värde på andra kolumner, men lägre plats i tabellen. ",
+                    mode="md")
+                tgb.table("{df_providers}", width="100%")
         
     
 

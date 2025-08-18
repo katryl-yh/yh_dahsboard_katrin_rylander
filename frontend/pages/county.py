@@ -89,12 +89,6 @@ with tgb.Page() as county_page:
             tgb.navbar()
 
             with tgb.part(class_name="card"):
-                tgb.text("# YH dashboard 2025 - ansökningsomgång för kurser", mode="md")
-                tgb.text(
-                    "Denna dashboard syftar till att vara ett verktyg för intressenter inom yrkeshögskola att läsa av KPIer för olika utbildningsanordnare.  \n"
-                    "För utbildningsanordnare skulle man exempelvis kunna se vad konkurrenterna ansökt och ta inspiration från dem.",
-                    mode="md",
-                )
                 tgb.text("## Statistik per Län", mode="md")
                 tgb.text(
                     "Välj ett Län för att se statistik och KPIer.", 
@@ -134,7 +128,7 @@ with tgb.Page() as county_page:
 
                 with tgb.layout(columns="1"):
                     with tgb.part(class_name="table-container"):
-                        tgb.text("Rå data för {selected_county}", mode="md")
+                        tgb.text("### Rå data för {selected_county}", mode="md")
                         tgb.table("{df_selected_county}", width="100%")
 
 
