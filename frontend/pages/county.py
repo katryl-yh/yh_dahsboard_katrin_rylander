@@ -95,16 +95,16 @@ with tgb.Page() as county_page:
                     "För utbildningsanordnare skulle man exempelvis kunna se vad konkurrenterna ansökt och ta inspiration från dem.",
                     mode="md",
                 )
-                tgb.text("## Statistik per utvald Län", mode="md")
+                tgb.text("## Statistik per Län", mode="md")
                 tgb.text(
-                    "Välj en Län för att se statistik och KPIer.", 
+                    "Välj ett Län för att se statistik och KPIer.", 
                     mode="md")
 
                 tgb.selector("{selected_county}", lov=all_counties, dropdown=True, on_change=on_county_change)
 
                 with tgb.layout(columns="1 1 1"):
                     with tgb.part(class_name="stat-card"):
-                        tgb.text("#### Beviljade", mode="md")
+                        tgb.text("#### Beviljade kurser", mode="md")
                         tgb.text("**{approved_courses}**", mode="md")
                     with tgb.part(class_name="stat-card"):
                         tgb.text("#### Ansökta kurser", mode="md")
@@ -124,12 +124,12 @@ with tgb.Page() as county_page:
                         tgb.text("#### Beviljandegrad (platser)", mode="md")
                         #tgb.text("**{}**", mode="md")
                 
-                tgb.text("### Fördelning av kurser per utbildningsområde i {selected_county}", mode="md")
+                tgb.text("### Fördelning av beviljade och avslagna kursansökningar per utbildningsområde i {selected_county}", mode="md")
                 tgb.text(
                         "Stapeldiagrammet är uppdelat i respektive utbildningsområde och visar på antalet beviljade kurser i blått och antalet avslag i grått.  \n",
                         mode="md")
                 tgb.chart(figure="{county_chart}", type="plotly")
-                tgb.text("### Histogram över YH-poäng för beviljade och avslanga kurser i {selected_county}", mode="md")
+                tgb.text("### Histogram över YH-poäng för beviljade och avslagna kurser i {selected_county}", mode="md")
                 tgb.chart(figure="{county_histogram}", type="plotly")
 
                 with tgb.layout(columns="1"):
