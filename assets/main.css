@@ -1,1 +1,7 @@
 @import "responsive_screens.css";
+
+.table-container {
+    overflow-x: auto;
+    max-width: 100%;
+    padding: 10px;
+}

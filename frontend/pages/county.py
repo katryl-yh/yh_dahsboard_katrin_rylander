@@ -46,21 +46,6 @@ approved_places = county_vm["approved_places"]
 county_chart = county_vm["county_chart"]
 county_histogram = county_vm["county_histogram"]
 
-# initial chart for selected county
-county_chart = education_area_chart(
-    summary,
-    selected_county,
-    **CHART_STYLE,
-)
-
-# Initial histogram for selected county (reuse same function)
-county_histogram = credits_histogram(
-    df,
-    selected_county,
-    nbinsx=20,
-    **CHART_STYLE,
-)
-
 def on_county_change(state, var_name=None, var_value=None):
     if var_name != "selected_county":
         return
@@ -143,12 +128,13 @@ with tgb.Page() as county_page:
                     "Stapeldiagrammet är uppdelat i respektive utbildningsområde och visar på antalet beviljade kurser i blått och antalet avslag i grått.  \n",
                     mode="md")
             tgb.chart(figure="{county_chart}", type="plotly")
-            tgb.text("### Historgram över YH-poäng för beviljade och avslanga kurser i {selected_county}", mode="md")
+            tgb.text("### Histogram över YH-poäng för beviljade och avslanga kurser i {selected_county}", mode="md")
             tgb.chart(figure="{county_histogram}", type="plotly")
 
             with tgb.layout(columns="1"):
-                tgb.text("Rå data för {selected_county}", mode="md")
-                tgb.table("{df_selected_county}")
+                with tgb.part(class_name="table-container"):
+                    tgb.text("Rå data för {selected_county}", mode="md")
+                    tgb.table("{df_selected_county}", width="100%")
 
 
 """ Gui(county_page).run(
