@@ -279,7 +279,7 @@ def summarize_providers(df: pd.DataFrame, provider_col: str = "Anordnare namn") 
       - Beviljade kurser
       - Sökta kurser
       - Beviljandegrad (kurser) %
-      - Ranking beviljade kursomgångar (primary: Beviljade kurser DESC, tiebreak: Beviljandegrad (kurser) % DESC)
+      - Ranking beviljade kurser (primary: Beviljade kurser DESC, tiebreak: Beviljandegrad (kurser) % DESC)
     """
     if provider_col not in df.columns:
         raise ValueError(f"summarize_providers(): missing column '{provider_col}' in df")
@@ -339,7 +339,7 @@ def summarize_providers(df: pd.DataFrame, provider_col: str = "Anordnare namn") 
         beviljade_kurser AS "Beviljade kurser",
         sokta_kurser AS "Sökta kurser",
         beviljandegrad_kurser_pct AS "Beviljandegrad (kurser) %",
-        DENSE_RANK() OVER (ORDER BY beviljade_kurser DESC, beviljandegrad_kurser_pct DESC) AS "Ranking beviljade kursomgångar"
+        DENSE_RANK() OVER (ORDER BY beviljade_kurser DESC, beviljandegrad_kurser_pct DESC) AS "Ranking beviljade kurser"
     FROM agg
     ORDER BY "Ranking beviljade platser" ASC, "Anordnare namn" ASC
     """

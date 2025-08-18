@@ -43,6 +43,8 @@ provider_vm = compute_provider_view(
 )
 provider_rank_places = provider_vm["provider_rank_places"]
 provider_rank_places_summary_str = provider_vm["provider_rank_places_summary_str"]
+provider_rank_courses = provider_vm["provider_rank_courses"]                    
+provider_rank_courses_summary_str = provider_vm["provider_rank_courses_summary_str"]  
 provider_places_summary_str = provider_vm["provider_places_summary_str"]
 provider_places_approval_rate_str = provider_vm["provider_places_approval_rate_str"]
 provider_courses_summary_str = provider_vm["provider_courses_summary_str"]
@@ -66,6 +68,8 @@ def on_provider_change(state, var_name=None, var_value=None):
         )
         state.provider_rank_places = vm["provider_rank_places"]
         state.provider_rank_places_summary_str = vm["provider_rank_places_summary_str"]
+        state.provider_rank_courses = vm["provider_rank_courses"]                    
+        state.provider_rank_courses_summary_str = vm["provider_rank_courses_summary_str"]  
         state.provider_places_summary_str = vm["provider_places_summary_str"]
         state.provider_places_approval_rate_str = vm["provider_places_approval_rate_str"]
         state.provider_courses_summary_str = vm["provider_courses_summary_str"]
@@ -78,8 +82,10 @@ def on_provider_change(state, var_name=None, var_value=None):
         state,
         "selected_provider",
         "provider_rank_places",
-        "provider_rank_places_summary_str",
         "provider_places_summary_str",
+        "provider_rank_courses", 
+        "provider_rank_places_summary_str",         
+        "provider_rank_courses_summary_str", 
         "provider_places_approval_rate_str",
         "provider_courses_summary_str",
         "provider_courses_approval_rate_str",
@@ -114,7 +120,7 @@ with tgb.Page() as providers_page:
                 with tgb.layout(columns="1 1 1"):
                     with tgb.part(class_name="stat-card"):
                         tgb.text("##### Ranking beviljade kurser", mode="md")
-                        #tgb.text("**{provider_rank_courses_summary_str}**", mode="md")
+                        tgb.text("**{provider_rank_courses_summary_str}**", mode="md")
                     with tgb.part(class_name="stat-card"):
                         tgb.text("##### Kurser: beviljade av sökta", mode="md")
                         tgb.text("**{provider_courses_summary_str}**", mode="md")

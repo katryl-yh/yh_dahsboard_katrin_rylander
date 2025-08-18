@@ -72,10 +72,13 @@ def compute_provider_view(
     courses_total = int(r.get("Sökta kurser", 0))
     courses_rate = float(r.get("Beviljandegrad (kurser) %", 0.0))
     rank_places = int(r.get("Ranking beviljade platser", 0))
+    rank_courses = int(r.get("Ranking beviljade kurser", 0))
 
     return dict(
         provider_rank_places=rank_places,
         provider_rank_places_summary_str=f"{rank_places} av {total_providers:,}",
+        provider_rank_courses=rank_courses,                     
+        provider_rank_courses_summary_str=f"{rank_courses} av {total_providers:,}", 
         provider_places_summary_str=f"{places_appr:,} av {places_applied:,}",
         provider_places_approval_rate_str=f"{places_rate:.1f}%",
         provider_courses_summary_str=f"{courses_appr:,} av {courses_total:,}",
