@@ -1,6 +1,6 @@
 from __future__ import annotations
 import plotly.graph_objects as go
-from utils.constants import BLUE_1, GRAY_1, GRAY_12
+from utils.constants import BLUE_1, GRAY_1, GRAY_12, GRAY_2, ORANGE_1
 import pandas as pd
 
 def education_area_chart(
@@ -656,7 +656,7 @@ def create_education_gender_chart(
             y=pivot_df["utbildningsområde"],
             name="Kvinnor",
             orientation="h",
-            marker_color="#f59e0b",  # Orange
+            marker_color=ORANGE_1,  # Orange
             hovertemplate="Utbildningsområde: %{y}<br>Kvinnor: %{x}<extra></extra>",
             legendrank=1,
         ))
@@ -666,7 +666,7 @@ def create_education_gender_chart(
             y=pivot_df["utbildningsområde"],
             name="Män",
             orientation="h",
-            marker_color="#0284c7",  # Blue
+            marker_color=BLUE_1,  # Blue
             hovertemplate="Utbildningsområde: %{y}<br>Män: %{x}<extra></extra>",
             legendrank=2,
         ))
@@ -677,7 +677,7 @@ def create_education_gender_chart(
             y=pivot_df["utbildningsområde"],
             mode="markers",
             name="Totalt",
-            marker=dict(color="#4A606C", size=10, symbol="circle"),
+            marker=dict(color=GRAY_2, size=10, symbol="circle"),
             hovertemplate="Utbildningsområde: %{y}<br>Totalt: %{x}<extra></extra>",
             showlegend=True,
             legendrank=3,
