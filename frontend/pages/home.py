@@ -74,7 +74,7 @@ with tgb.Page() as home_page:
                 )
                 tgb.text("## Statistik för Sverige", mode="md")
                 tgb.text(
-                    "Nedan presenteras KPIer och information för hela ansökningsomgången för hela Sverige."
+                    "Nedan presenteras KPIer och information för hela ansökningsomgången för hela Sverige.  \n"
                     "Detta innebär samtliga län, utbildningsområden och utbildningsanordnare i landet.", 
                     mode="md")
                 
@@ -100,11 +100,11 @@ with tgb.Page() as home_page:
                         tgb.text("#### Beviljandegrad (platser)", mode="md")
                         tgb.text("**{national_places_approval_rate_str}**", mode="md")
 
-                tgb.text("### Beviljade kurser i respektive län", mode="md")
-                with tgb.layout(columns="1 2"):
+                with tgb.layout(columns="2 3"):
                     with tgb.part(class_name="stat-card"):
+                        tgb.text("### Beviljade kurser i respektive län", mode="md")
                         tgb.text(
-                            "Kartan visar antal beviljade kurser i respektive län där mörkare färg indikerar på fler beviljade kurser.  \n  \n"
+                            "Kartan visar antal beviljade kurser i respektive län  \n där mörkare färg indikerar på fler beviljade kurser.  \n  \n"
                             "Vi ser tydligt att de större länen:  \n Stockholm, Västra götaland och Skåne   \n har flest kurser beviljade.  \n  \n"
                             "Ta muspekaren över respektive län för att se exakta antalet beviljade kurser per län.",
                             mode="md")
