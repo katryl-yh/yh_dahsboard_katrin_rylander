@@ -6,10 +6,10 @@ from frontend.pages.students import students_page
 
 
 pages = {
-    "home": home_page,
-    "county": county_page,
-    "providers": providers_page,
-    "students": students_page,
+    "hem": home_page,
+    "län": county_page,
+    "anordnare": providers_page,
+    "antagna": students_page,
 }
 
 

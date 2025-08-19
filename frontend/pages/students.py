@@ -144,7 +144,7 @@ def on_education_area_change(state):
 # --------- MAIN CODE ---------
 
 # Get file path using project constants for consistency
-file_path = PROJECT_ROOT / "data" / "scb" / "Antal antagna som påbörjat studier.csv"
+file_path = PROJECT_ROOT / "data" / "scb" / "Antagna som påbörjat studier på yrkeshögskolans kurser.csv"
 print(f"Looking for file at: {file_path}")
 
 # Load and process data
@@ -206,51 +206,49 @@ with tgb.Page() as students_page:
                     tgb.text(
                         "Diagrammet visar:  \n" \
                         "- antal kvinnor (orange) och   \n" \
-                        "- män (blå) som påbörjat studier för varje år.  \n"
+                        "- män (blå) som påbörjat studier för varje år.  \n  \n"
                         "Den gråa cirkeln representerar det totala antalet studenter per år.", 
                         mode="md"
                     )
-                    with tgb.part(class_name="card"):
-                        tgb.chart(figure="{yearly_chart}", type="plotly")
+                    tgb.chart(figure="{yearly_chart}", type="plotly")
 
-
-                with tgb.layout(columns="2 3"):
-                    tgb.text("### Välj år för att få fördjupad statistik:", mode="md")
-                    tgb.selector(
-                            value="{selected_year}", 
-                            lov=available_years,
-                            dropdown=True,
-                            on_change=on_year_change
-                            )
-                    
-                tgb.text("### Fördelning av antagna studenter per utbildningsområde i {selected_year}", mode="md")
-                tgb.text(
-                    "Diagrammet visar antal kvinnor (orange) och män (blå) som påbörjat studier i varje utbildningsområde.  \n "
-                    "Den gråa cirkeln representerar det totala antalet studenter.", 
-                    mode="md"
-                    )
                 with tgb.part(class_name="card"):
+                    with tgb.layout(columns="1 1"):
+                        tgb.text("### Välj år för att få fördjupad statistik:", mode="md")
+                        tgb.selector(
+                                value="{selected_year}", 
+                                lov=available_years,
+                                dropdown=True,
+                                on_change=on_year_change
+                                )
+                    
+                    tgb.text("#### Fördelning av antagna studenter per utbildningsområde i {selected_year}", mode="md")
+                    tgb.text(
+                        "Diagrammet visar antal kvinnor (orange) och män (blå) som påbörjat studier i varje utbildningsområde.  \n "
+                        "Den gråa cirkeln representerar det totala antalet studenter.", 
+                        mode="md"
+                        )
+
                     tgb.chart(figure="{student_chart}", type="plotly")
             
-            # Add age distribution chart
-                tgb.text(f"### Åldersfördelning bland antagna studenter i {selected_year}", mode="md")
-                with tgb.layout(columns="1 2"):
-                    tgb.text("Välj utbildningsområde:", mode="md")
-                    tgb.selector(
-                        value="{selected_education_area}",
-                        lov=education_areas,
-                        dropdown=True,
-                        on_change=on_education_area_change
+                # Add age distribution chart
+                    tgb.text(f"#### Åldersfördelning bland antagna studenter i {selected_year}", mode="md")
+                    with tgb.layout(columns="1 2"):
+                        tgb.text("##### Välj utbildningsområde:", mode="md")
+                        tgb.selector(
+                            value="{selected_education_area}",
+                            lov=education_areas,
+                            dropdown=True,
+                            on_change=on_education_area_change
+                        )
+                    tgb.text(
+                        "Diagrammet visar antal kvinnor (orange) och män (blå) fördelade på åldersgrupper.  \n "
+                        "Filtrera per utbildningsområde för att se åldersfördelningen inom specifika områden.", 
+                        mode="md"
                     )
-                tgb.text(
-                    "Diagrammet visar antal kvinnor (orange) och män (blå) fördelade på åldersgrupper. "
-                    "Filtrera per utbildningsområde för att se åldersfördelningen inom specifika områden.", 
-                    mode="md"
-                )
-                with tgb.part(class_name="card"):
                     tgb.chart(figure="{age_chart}", type="plotly")
+            
             # Data table 
-            with tgb.part(class_name="card"):
-                tgb.text("### Rådata", mode="md")
-                with tgb.part(class_name="table-container"):
-                    tgb.table("{df}", width="100%")
+            tgb.text("### Rådata över antalet antagna som påbörjat YH-studier", mode="md")
+            with tgb.part(class_name="table-container"):
+                tgb.table("{df}", width="100%")
