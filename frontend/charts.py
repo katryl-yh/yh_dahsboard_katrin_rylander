@@ -571,55 +571,85 @@ def create_education_gender_chart(
     Returns:
         Plotly figure object
     """
+    # Define the base layout configuration once
+    base_layout = {
+        "height": 500 if pivot_df.empty else 550,
+        "margin": dict(l=120, r=30, t=80 if show_title else 20, b=40),
+        "plot_bgcolor": "white",
+        "paper_bgcolor": "white",
+        "showlegend": False if pivot_df.empty else True,
+        "barmode": "stack",  # Add this line to ensure bars are stacked
+        "bargap": 0.25,      # Add consistent bargap for spacing
+        "xaxis": dict(
+            showline=True, 
+            linecolor=GRAY_12,
+            tickfont=dict(size=xtick_size, color=GRAY_12, family=font_family),
+            zeroline=True,            # Show zero line
+            zerolinecolor=GRAY_12,    # Same color as axis
+            zerolinewidth=1,          # Width of zero line
+            automargin=True,
+            showgrid=False,           # Remove horizontal grid lines
+            rangemode="tozero",       # Ensure range starts at zero
+            constrain="domain",       # Constrain to exact domain
+            anchor="y",               # Anchor to y-axis
+            position=0,               # Position at 0
+        ),
+        "yaxis": dict(
+            showline=True, 
+            linecolor=GRAY_12,
+            tickfont=dict(size=ytick_size, color=GRAY_12, family=font_family),
+            zeroline=False,
+            automargin=True,
+            showgrid=False,
+            ticklabelposition="outside left",
+            ticksuffix="  ",
+            # Remove y-axis title
+        ),
+        # Add custom annotations for axis titles
+        "annotations": [
+            # X-axis title annotation
+            dict(
+                text="<b>ANTAL STUDENTER</b>",
+                font=dict(size=label_font_size+2, family=font_family),
+                xref="paper", yref="paper",
+                x=0.0,  # Left edge of plot
+                y=-0.05,  # Below the x-axis
+                showarrow=False,
+                xanchor="left",  # Left-aligned
+                yanchor="top",   # Top-aligned to specified position
+            ),
+            # Y-axis title annotation
+            dict(
+                text="<b>UTBILDNINGSOMRÅDE</b>",
+                font=dict(size=label_font_size+2, family=font_family),
+                xref="paper", yref="paper",
+                x=-0.0,  # Left of y-axis
+                y=1.0,    # Top of plot
+                showarrow=False,
+                xanchor="right",  # Right-aligned
+                yanchor="bottom", # Bottom-aligned to specified position
+                textangle=0,      # Horizontal text
+            ),
+        ],
+        "font": dict(family=font_family),
+    }
+    
+    # Create figure
+    fig = go.Figure()
+    
+    # Handle empty dataframe case
     if pivot_df.empty:
-        # Return empty figure with proper styling
-        fig = go.Figure()
-        layout_args = {
-            "height": 500,
-            "margin": dict(l=120, r=30, t=80 if show_title else 20, b=40),
-            "plot_bgcolor": "white",
-            "paper_bgcolor": "white",
-            "showlegend": False,
-            "xaxis": dict(
-                showline=True, linecolor=GRAY_12,
-                tickfont=dict(size=xtick_size, color=GRAY_12, family=font_family),
-                zeroline=False,
-                automargin=True,
-                showgrid=False,
-                title=dict(
-                    text="<b>ANTAL STUDENTER</b>",
-                    font=dict(size=label_font_size, family=font_family),
-                    standoff=15,
-                ),
-            ),
-            "yaxis": dict(
-                showline=True, linecolor=GRAY_12,
-                tickfont=dict(size=ytick_size, color=GRAY_12, family=font_family),
-                zeroline=False,
-                automargin=True,
-                showgrid=False,
-                title=dict(
-                    text="<b>UTBILDNINGSOMRÅDE</b>",
-                    font=dict(size=label_font_size, family=font_family),
-                    standoff=15,
-                ),
-            ),
-        }
-        
         # Only add title if requested
         if show_title:
-            layout_args["title"] = dict(
+            base_layout["title"] = dict(
                 text="Ingen data tillgänglig",
                 font=dict(size=title_size, family=font_family),
             )
-            
-        fig.update_layout(**layout_args)
+        
+        fig.update_layout(**base_layout)
         return fig
     
     try:
-        # Create visualization
-        fig = go.Figure()
-        
         # Add stacked bars
         fig.add_trace(go.Bar(
             x=pivot_df["Kvinnor"],
@@ -653,54 +683,24 @@ def create_education_gender_chart(
             legendrank=3,
         ))
         
-        # Layout configuration
-        layout_args = {
-            "barmode": "stack",
-            "bargap": 0.25,
-            "height": 550,
-            "margin": dict(l=120, r=30, t=80 if show_title else 20, b=40),
-            "plot_bgcolor": "white",
-            "paper_bgcolor": "white",
-            "showlegend": True,
-            "legend": dict(
-                orientation="h",
-                yanchor="bottom", 
-                y=1.02,
-                xanchor="center", 
-                x=0.5,
-                font=dict(size=legend_font_size, family=font_family),
-                traceorder="normal",
-            ),
-            "font": dict(family=font_family),
-            "xaxis": dict(
-                showline=True, 
-                linecolor=GRAY_12,
-                tickfont=dict(size=xtick_size, color=GRAY_12, family=font_family),
-                zeroline=False,
-                automargin=True,
-                showgrid=False,  # Remove horizontal grid lines
-                title=dict(
-                    text="<b>ANTAL STUDENTER</b>",
-                    font=dict(size=label_font_size, family=font_family),
-                    standoff=15,
-                ),
-            ),
-            "yaxis": dict(
-                showline=True, 
-                linecolor=GRAY_12,
-                tickfont=dict(size=ytick_size, color=GRAY_12, family=font_family),
-                zeroline=False,
-                automargin=True,
-                showgrid=False,  # Remove vertical grid lines
-                title=dict(
-                    text="<b>UTBILDNINGSOMRÅDE</b>",
-                    font=dict(size=label_font_size, family=font_family),
-                    standoff=15,
-                ),
-                categoryorder="array", 
-                categoryarray=pivot_df["utbildningsområde"].tolist(),
-            ),
-        }
+        # Add additional layout configuration for non-empty data
+        layout_args = base_layout.copy()
+        
+        # Add legend settings for non-empty case
+        layout_args["legend"] = dict(
+            orientation="h",
+            yanchor="bottom", 
+            y=1.02,
+            xanchor="center", 
+            x=0.5,
+            font=dict(size=legend_font_size, family=font_family),
+            traceorder="normal",
+        )
+        
+        # Add categoryorder for y-axis
+        if "yaxis" in layout_args:
+            layout_args["yaxis"]["categoryorder"] = "array"
+            layout_args["yaxis"]["categoryarray"] = pivot_df["utbildningsområde"].tolist()
         
         # Only add title if requested
         if show_title:
@@ -719,20 +719,13 @@ def create_education_gender_chart(
     except Exception as e:
         import logging
         logging.error(f"Error creating chart: {str(e)}")
-        # Return error figure
-        fig = go.Figure()
-        layout_args = {
-            "height": 500,
-            "margin": dict(l=120, r=30, t=80 if show_title else 20, b=40),
-            "plot_bgcolor": "white",
-            "paper_bgcolor": "white",
-        }
         
+        # Use base layout for error case
         if show_title:
-            layout_args["title"] = dict(
+            base_layout["title"] = dict(
                 text=f"Fel vid skapande av diagram: {str(e)}",
                 font=dict(size=title_size, family=font_family),
             )
             
-        fig.update_layout(**layout_args)
+        fig.update_layout(**base_layout)
         return fig
