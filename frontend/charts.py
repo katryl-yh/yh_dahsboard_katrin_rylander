@@ -945,9 +945,9 @@ def create_age_gender_chart(
     year: str,
     education_area: str = "Alla områden",
     *,
-    show_title: bool = True,
+    show_title: bool = False,
     custom_title: str | None = None,
-    xtick_size: int = 11,
+    xtick_size: int = 12,
     ytick_size: int = 12,
     title_size: int = 18,
     legend_font_size: int = 12,
@@ -1008,24 +1008,32 @@ def create_age_gender_chart(
             # X-axis title annotation
             dict(
                 text="<b>ÅLDERSGRUPP</b>",
-                font=dict(size=label_font_size+2, family=font_family),
+                font=dict(
+                    size=label_font_size+2, 
+                    color=GRAY_12,
+                    family=font_family
+                    ),
                 xref="paper", yref="paper",
-                x=0.5,  # Center of plot
-                y=-0.15,  # Below the x-axis
+                x=0.0,  # Center of plot
+                y=-0.1,  # Below the x-axis
                 showarrow=False,
-                xanchor="center",  
+                xanchor="left",  
                 yanchor="top",
             ),
             # Y-axis title annotation
             dict(
                 text="<b>ANTAL STUDENTER</b>",
-                font=dict(size=label_font_size+2, family=font_family),
+                font=dict(
+                    size=label_font_size+2,
+                    color=GRAY_12, 
+                    family=font_family
+                    ),
                 xref="paper", yref="paper",
-                x=-0.08,  # Left of y-axis
-                y=0.5,    # Middle of plot
+                x=-0.06,  # Left of y-axis
+                y=1.0,    # Middle of plot
                 showarrow=False,
-                xanchor="center",
-                yanchor="middle",
+                xanchor="right",
+                yanchor="top",
                 textangle=270,  # Vertical text
             ),
         ],
