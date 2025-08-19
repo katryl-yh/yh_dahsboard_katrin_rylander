@@ -677,7 +677,7 @@ def create_education_gender_chart(
             y=pivot_df["utbildningsområde"],
             mode="markers",
             name="Totalt",
-            marker=dict(color=GRAY_2, size=10, symbol="circle"),
+            marker=dict(color=GRAY_12, size=10, symbol="circle"),
             hovertemplate="Utbildningsområde: %{y}<br>Totalt: %{x}<extra></extra>",
             showlegend=True,
             legendrank=3,
