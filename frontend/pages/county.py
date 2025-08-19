@@ -8,12 +8,6 @@ from backend.data_processing import (
     compute_national_stats
 )
 
-from frontend.maps import build_sweden_map
-from frontend.charts import (
-    education_area_chart, 
-    credits_histogram    
-)
-
 from frontend.viewmodels import compute_county_view
 from utils.chart_style import CHART_STYLE
 
