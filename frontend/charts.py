@@ -799,27 +799,21 @@ def create_yearly_gender_chart(
         ),
         # Add custom annotations for axis titles
         "annotations": [
-            # X-axis title annotation
-            dict(
-                text="<b>ÅR</b>",
-                font=dict(size=label_font_size+2, family=font_family),
-                xref="paper", yref="paper",
-                x=0.5,  # Center of plot
-                y=-0.15,  # Below the x-axis
-                showarrow=False,
-                xanchor="center",  
-                yanchor="top",
-            ),
+            # X-axis title annotation - NONE
             # Y-axis title annotation
             dict(
                 text="<b>ANTAL STUDENTER</b>",
-                font=dict(size=label_font_size+2, family=font_family),
+                font=dict(
+                    size=label_font_size+2, 
+                    color=GRAY_12,
+                    family=font_family,
+                ),
                 xref="paper", yref="paper",
                 x=-0.08,  # Left of y-axis
-                y=0.5,    # Middle of plot
+                y=1.0,    # Middle of plot
                 showarrow=False,
-                xanchor="center",
-                yanchor="middle",
+                xanchor="right",
+                yanchor="top",
                 textangle=270,  # Vertical text
             ),
         ],
