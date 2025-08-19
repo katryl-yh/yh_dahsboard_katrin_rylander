@@ -538,7 +538,7 @@ def credits_histogram(
     fig.update_layout(**layout_args)
     return fig
 
-# --------- VISUALIZATION FUNCTIONS ---------
+# --------- VISUALIZATION FUNCTIONS STUDENTS ---------
 
 def create_education_gender_chart(
     pivot_df: pd.DataFrame, 
@@ -610,7 +610,11 @@ def create_education_gender_chart(
             # X-axis title annotation
             dict(
                 text="<b>ANTAL STUDENTER</b>",
-                font=dict(size=label_font_size+2, family=font_family),
+                font=dict(
+                    size=label_font_size+2, 
+                    color=GRAY_12,
+                    family=font_family
+                    ),
                 xref="paper", yref="paper",
                 x=0.0,  # Left edge of plot
                 y=-0.05,  # Below the x-axis
@@ -621,7 +625,11 @@ def create_education_gender_chart(
             # Y-axis title annotation
             dict(
                 text="<b>UTBILDNINGSOMRÅDE</b>",
-                font=dict(size=label_font_size+2, family=font_family),
+                font=dict(
+                    size=label_font_size+2,
+                    color=GRAY_12,
+                    family=font_family
+                    ),
                 xref="paper", yref="paper",
                 x=-0.0,  # Left of y-axis
                 y=1.0,    # Top of plot
@@ -1081,10 +1089,34 @@ def create_age_gender_chart(
             fig.update_layout(**base_layout)
             return fig
             
-        # Define age group order for logical sorting
-        age_order = ["-24 år", "25-29 år", "30-34 år", "35-39 år", "40-44 år", 
-                    "45-49 år", "50-54 år", "55-59 år", "60-64 år", "65- år", "Totalt"]
+        # Extract unique age groups from the data
+        age_groups = df_filtered["ålder"].unique().tolist()
         
+        # Custom sorting function for age groups
+        def age_group_sort_key(age):
+            if age.lower() == "totalt":
+                return 999  # Place "Totalt" at the end
+            elif age == "-24 år":
+                return 0    # Place youngest group first
+            elif age == "45+ år":
+                return 45   # Place middle aged group in correct position
+            elif "+" in age:
+                # Handle other plus ranges
+                return int(age.split("+")[0])
+            elif "-" in age:
+                # Handle ranges like "25-29 år"
+                return int(age.split("-")[0])
+            else:
+                # Default case
+                return 999
+        
+        # Sort age groups logically
+        age_groups.sort(key=age_group_sort_key)
+        
+        # Remove "Totalt" from visualization if present
+        age_groups = [age for age in age_groups if age.lower() != "totalt"]
+
+
         # Pivot to have one row per ålder, columns for kvinnor and män
         pivot_age = df_filtered.pivot_table(
             index="ålder",
@@ -1093,11 +1125,15 @@ def create_age_gender_chart(
             aggfunc="sum"
         ).fillna(0)
         
-        # Sort by age groups in a logical order
-        available_ages = [age for age in age_order if age in pivot_age.index]
+        # Reindex with our sorted age groups, excluding any not in the pivot index
+        available_ages = [age for age in age_groups if age in pivot_age.index]
         pivot_age = pivot_age.reindex(available_ages)
         
-        # Skip "Totalt" in visualization (if requested)
+        # Reindex with our sorted age groups, excluding any not in the pivot index
+        available_ages = [age for age in age_groups if age in pivot_age.index]
+        pivot_age = pivot_age.reindex(available_ages)
+
+        # You should also drop "Totalt" from the pivot_age index if it exists
         if "Totalt" in pivot_age.index:
             pivot_age = pivot_age.drop("Totalt")
         
