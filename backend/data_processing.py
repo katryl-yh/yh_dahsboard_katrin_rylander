@@ -1,3 +1,4 @@
+import os
 import logging
 import sys
 from pathlib import Path
@@ -352,3 +353,164 @@ def summarize_providers(df: pd.DataFrame, provider_col: str = "Anordnare namn") 
         con.close()
 
     return out
+
+# --------- DATA LOADING FUNCTIONS ---------
+
+def load_student_data(file_path):
+    """
+    Loads student data from a CSV file.
+    
+    Parameters:
+        file_path: Path to the CSV file
+        
+    Returns:
+        tuple: (dataframe, error_status, error_message)
+    """
+    try:
+        # Check if file exists
+        if not os.path.isfile(file_path):
+            return pd.DataFrame(), True, f"File not found: {file_path}"
+        
+        # Read CSV file
+        df = pd.read_csv(file_path, encoding="latin1")
+        
+        # Clean column names
+        df.columns = df.columns.str.strip()
+        logging.info(f"Successfully loaded data with {len(df)} rows")
+        
+        return df, False, ""
+        
+    except Exception as e:
+        error_msg = f"Error reading CSV: {str(e)}"
+        logging.error(error_msg)
+        return pd.DataFrame(), True, error_msg
+
+def preprocess_student_data(df):
+    """
+    Preprocesses the student data for analysis.
+    
+    Parameters:
+        df: Raw dataframe from CSV
+        
+    Returns:
+        DataFrame: Processed dataframe
+    """
+    if df.empty:
+        return df
+        
+    # Rename columns for consistency
+    processed_df = df.copy()
+    
+    # Check if we have enough columns
+    if len(processed_df.columns) >= 7:
+        processed_df.columns = ["kön", "utbildningsområde", "ålder", "2020", "2021", "2022", "2023", "2024"]
+        
+        # Ensure year columns are int
+        for col in ["2020", "2021", "2022", "2023", "2024"]:
+            if col in processed_df.columns:
+                processed_df[col] = pd.to_numeric(processed_df[col], errors="coerce").fillna(0).astype(int)
+    
+    return processed_df
+
+def get_available_years(df):
+    """
+    Gets the available years in the dataframe.
+    
+    Parameters:
+        df: Processed dataframe
+        
+    Returns:
+        list: Available years
+    """
+    if df.empty or len(df.columns) < 4:
+        return []
+        
+    return sorted([col for col in df.columns[3:] if str(col).isdigit()])
+
+# --------- DATA FILTERING FUNCTIONS ---------
+
+def filter_data_by_year(df, year):
+    """
+    Filters the data for a specific year.
+    
+    Parameters:
+        df: Processed dataframe
+        year: Year to filter for
+        
+    Returns:
+        DataFrame: Filtered dataframe in long format with selected year
+    """
+    if df.empty:
+        return pd.DataFrame()
+    
+    try:
+        # Ensure we have a copy to avoid modifying the original
+        df_copy = df.copy()
+        
+        # Melt to long format
+        df_long = df_copy.melt(
+            id_vars=["kön", "utbildningsområde", "ålder"],
+            var_name="år",
+            value_name="antal"
+        )
+        
+        # Ensure antal is int
+        df_long["antal"] = pd.to_numeric(df_long["antal"], errors="coerce").fillna(0).astype(int)
+        
+        # Filter for the selected year
+        year_str = str(year)
+        return df_long[df_long["år"] == year_str]
+        
+    except Exception as e:
+        logging.error(f"Error filtering data: {str(e)}")
+        return pd.DataFrame()
+
+def prepare_education_gender_data(df_year, exclude_total=True):
+    """
+    Prepares data for education area by gender visualization.
+    
+    Parameters:
+        df_year: Filtered dataframe for specific year
+        exclude_total: Whether to exclude "totalt" from utbildningsområde
+        
+    Returns:
+        DataFrame: Pivot table with utbildningsområde and gender data
+    """
+    if df_year.empty:
+        return pd.DataFrame()
+    
+    try:
+        # Filter for total age group
+        df_filtered = df_year[df_year["ålder"].str.lower() == "totalt"]
+        
+        # Exclude total education area if requested
+        if exclude_total:
+            df_filtered = df_filtered[df_filtered["utbildningsområde"].str.lower() != "totalt"]
+        
+        # Create pivot table
+        pivot_df = df_filtered.pivot_table(
+            index="utbildningsområde",
+            columns="kön",
+            values="antal",
+            aggfunc="sum"
+        ).fillna(0).reset_index()
+        
+        # Format column names
+        pivot_df.columns.name = None
+        pivot_df.rename(columns={
+            "kvinnor": "Kvinnor",
+            "män": "Män",
+            "totalt": "Totalt"
+        }, inplace=True)
+        
+        # Ensure columns are integers
+        for col in ["Kvinnor", "Män", "Totalt"]:
+            if col in pivot_df.columns:
+                pivot_df[col] = pd.to_numeric(pivot_df[col], errors="coerce").fillna(0).astype(int)
+        
+        # Sort by total students
+        return pivot_df.sort_values("Totalt")
+        
+    except Exception as e:
+        logging.error(f"Error preparing education gender data: {str(e)}")
+        return pd.DataFrame()

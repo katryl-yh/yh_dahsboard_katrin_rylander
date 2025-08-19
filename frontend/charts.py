@@ -537,3 +537,91 @@ def credits_histogram(
     
     fig.update_layout(**layout_args)
     return fig
+
+# --------- VISUALIZATION FUNCTIONS ---------
+
+def create_education_gender_chart(pivot_df, year):
+    """
+    Creates a horizontal stacked bar chart for gender distribution by education area.
+    
+    Parameters:
+        pivot_df: Pivot table with utbildningsområde and gender data
+        year: Year being displayed
+        
+    Returns:
+        Plotly figure object
+    """
+    if pivot_df.empty:
+        # Return empty figure
+        fig = go.Figure()
+        fig.update_layout(
+            title="Ingen data tillgänglig",
+            height=500,
+            plot_bgcolor="white",
+            paper_bgcolor="white"
+        )
+        return fig
+    
+    try:
+        # Create visualization
+        fig = go.Figure()
+        
+        # Add stacked bars
+        fig.add_trace(go.Bar(
+            x=pivot_df["Kvinnor"],
+            y=pivot_df["utbildningsområde"],
+            name="Kvinnor",
+            orientation="h",
+            marker_color="#f59e0b"  # Orange
+        ))
+        
+        fig.add_trace(go.Bar(
+            x=pivot_df["Män"],
+            y=pivot_df["utbildningsområde"],
+            name="Män",
+            orientation="h",
+            marker_color="#0284c7"  # Blue
+        ))
+        
+        # Add total markers
+        fig.add_trace(go.Scatter(
+            x=pivot_df["Totalt"],
+            y=pivot_df["utbildningsområde"],
+            mode="markers",
+            name="Totalt",
+            marker=dict(color="#4A606C", size=10, symbol="circle"),
+            showlegend=True
+        ))
+        
+        # Layout configuration
+        fig.update_layout(
+            barmode="stack",
+            title=f"Antal antagna per utbildningsområde ({year})",
+            xaxis_title="Antal studenter",
+            yaxis_title="Utbildningsområde",
+            plot_bgcolor="white",
+            paper_bgcolor="white",
+            height=550,
+            margin=dict(l=10, r=10, t=50, b=10),
+            legend=dict(
+                orientation="h",
+                yanchor="bottom", 
+                y=1.02,
+                xanchor="center", 
+                x=0.5
+            )
+        )
+        
+        return fig
+        
+    except Exception as e:
+        logging.error(f"Error creating chart: {str(e)}")
+        # Return error figure
+        fig = go.Figure()
+        fig.update_layout(
+            title=f"Fel vid skapande av diagram: {str(e)}",
+            height=500,
+            plot_bgcolor="white",
+            paper_bgcolor="white"
+        )
+        return fig
