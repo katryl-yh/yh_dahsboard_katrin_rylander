@@ -7,8 +7,8 @@ from frontend.pages.students import students_page
 
 pages = {
     "home": home_page,
-    #"county": county_page,
-    #"providers": providers_page,
+    "county": county_page,
+    "providers": providers_page,
     "students": students_page,
 }
 

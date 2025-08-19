@@ -939,3 +939,213 @@ def create_yearly_gender_chart(
             
         fig.update_layout(**base_layout)
         return fig
+    
+def create_age_gender_chart(
+    df: pd.DataFrame,
+    year: str,
+    education_area: str = "Alla områden",
+    *,
+    show_title: bool = True,
+    custom_title: str | None = None,
+    xtick_size: int = 11,
+    ytick_size: int = 12,
+    title_size: int = 18,
+    legend_font_size: int = 12,
+    label_font_size: int = 11,
+    font_family: str = "Arial",
+) -> go.Figure:
+    """
+    Creates a grouped bar chart showing gender distribution across age groups.
+    
+    Parameters:
+        df: DataFrame with age and gender data
+        year: Year being displayed
+        education_area: Selected education area to filter for
+        show_title: Whether to display a title
+        custom_title: Optional custom title text
+        xtick_size: Font size for x-axis ticks
+        ytick_size: Font size for y-axis ticks
+        title_size: Font size for chart title
+        legend_font_size: Font size for legend
+        label_font_size: Font size for labels
+        font_family: Font family for all text
+        
+    Returns:
+        Plotly figure object
+    """
+    # Define the base layout configuration
+    base_layout = {
+        "height": 450,
+        "margin": dict(l=80, r=30, t=80 if show_title else 20, b=60),
+        "plot_bgcolor": "white",
+        "paper_bgcolor": "white",
+        "showlegend": True,
+        "barmode": "group",  # Grouped bars instead of stacked
+        "bargap": 0.3,       # Spacing between bar groups
+        "bargroupgap": 0.1,  # Gap between bars in a group
+        "xaxis": dict(
+            showline=True, 
+            linecolor=GRAY_12,
+            tickfont=dict(size=xtick_size, color=GRAY_12, family=font_family),
+            zeroline=False,
+            automargin=True,
+            showgrid=False,
+            type="category",  # Treat x-axis as categorical
+        ),
+        "yaxis": dict(
+            showline=True, 
+            linecolor=GRAY_12,
+            tickfont=dict(size=ytick_size, color=GRAY_12, family=font_family),
+            zeroline=True,            
+            zerolinecolor=GRAY_12,    
+            zerolinewidth=1,          
+            automargin=True,
+            showgrid=False,
+            rangemode="tozero",
+        ),
+        # Add custom annotations for axis titles
+        "annotations": [
+            # X-axis title annotation
+            dict(
+                text="<b>ÅLDERSGRUPP</b>",
+                font=dict(size=label_font_size+2, family=font_family),
+                xref="paper", yref="paper",
+                x=0.5,  # Center of plot
+                y=-0.15,  # Below the x-axis
+                showarrow=False,
+                xanchor="center",  
+                yanchor="top",
+            ),
+            # Y-axis title annotation
+            dict(
+                text="<b>ANTAL STUDENTER</b>",
+                font=dict(size=label_font_size+2, family=font_family),
+                xref="paper", yref="paper",
+                x=-0.08,  # Left of y-axis
+                y=0.5,    # Middle of plot
+                showarrow=False,
+                xanchor="center",
+                yanchor="middle",
+                textangle=270,  # Vertical text
+            ),
+        ],
+        "font": dict(family=font_family),
+        "legend": dict(
+            orientation="h",
+            yanchor="bottom", 
+            y=1.02,
+            xanchor="center", 
+            x=0.5,
+            font=dict(size=legend_font_size, family=font_family),
+            traceorder="normal",
+        ),
+    }
+    
+    # Create figure
+    fig = go.Figure()
+    
+    # Handle empty dataframe case
+    if df.empty:
+        if show_title:
+            base_layout["title"] = dict(
+                text="Ingen data tillgänglig",
+                font=dict(size=title_size, family=font_family),
+            )
+        
+        fig.update_layout(**base_layout)
+        return fig
+    
+    try:
+        # Filter data for the selected education area
+        if education_area != "Alla områden":
+            df_filtered = df[df["utbildningsområde"] == education_area]
+        else:
+            df_filtered = df.copy()
+            
+        # Ensure we have data after filtering
+        if df_filtered.empty:
+            if show_title:
+                base_layout["title"] = dict(
+                    text=f"Ingen data tillgänglig för {education_area}",
+                    font=dict(size=title_size, family=font_family),
+                )
+            
+            fig.update_layout(**base_layout)
+            return fig
+            
+        # Define age group order for logical sorting
+        age_order = ["-24 år", "25-29 år", "30-34 år", "35-39 år", "40-44 år", 
+                    "45-49 år", "50-54 år", "55-59 år", "60-64 år", "65- år", "Totalt"]
+        
+        # Pivot to have one row per ålder, columns for kvinnor and män
+        pivot_age = df_filtered.pivot_table(
+            index="ålder",
+            columns="kön",
+            values="antal",
+            aggfunc="sum"
+        ).fillna(0)
+        
+        # Sort by age groups in a logical order
+        available_ages = [age for age in age_order if age in pivot_age.index]
+        pivot_age = pivot_age.reindex(available_ages)
+        
+        # Skip "Totalt" in visualization (if requested)
+        if "Totalt" in pivot_age.index:
+            pivot_age = pivot_age.drop("Totalt")
+        
+        # Normalize column names
+        if "kvinnor" in pivot_age.columns:
+            pivot_age.rename(columns={"kvinnor": "Kvinnor"}, inplace=True)
+        if "män" in pivot_age.columns:
+            pivot_age.rename(columns={"män": "Män"}, inplace=True)
+            
+        # Add women bars
+        if "Kvinnor" in pivot_age.columns:
+            fig.add_trace(go.Bar(
+                x=pivot_age.index,
+                y=pivot_age["Kvinnor"],
+                name="Kvinnor",
+                marker_color=ORANGE_1,
+                hovertemplate="Åldersgrupp: %{x}<br>Kvinnor: %{y}<extra></extra>",
+                legendrank=1,
+            ))
+        
+        # Add men bars
+        if "Män" in pivot_age.columns:
+            fig.add_trace(go.Bar(
+                x=pivot_age.index,
+                y=pivot_age["Män"],
+                name="Män",
+                marker_color=BLUE_1,
+                hovertemplate="Åldersgrupp: %{x}<br>Män: %{y}<extra></extra>",
+                legendrank=2,
+            ))
+        
+        # Only add title if requested
+        if show_title:
+            title_text = custom_title
+            if title_text is None:
+                area_text = f" - {education_area}" if education_area != "Alla områden" else ""
+                title_text = f"Åldersfördelning bland studenter ({year}){area_text}"
+                
+            base_layout["title"] = dict(
+                text=title_text,
+                font=dict(size=title_size, family=font_family),
+            )
+        
+        fig.update_layout(**base_layout)
+        return fig
+        
+    except Exception as e:
+        import logging
+        logging.error(f"Error creating age gender chart: {str(e)}")
+        
+        # Use base layout for error case
+        if show_title:
+            base_layout["title"] = dict(
+                text=f"Fel vid skapande av diagram: {str(e)}",
+                font=dict(size=title_size, family=font_family),
+            )
+            
+        fig.update_layout(**base_layout)
+        return fig

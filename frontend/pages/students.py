@@ -15,6 +15,7 @@ from utils.constants import PROJECT_ROOT
 from frontend.charts import (
     create_education_gender_chart,
     create_yearly_gender_chart,
+    create_age_gender_chart
 )
 # --------- DATA PREPARATION FUNCTIONS ---------
 
@@ -53,7 +54,34 @@ def prepare_yearly_gender_data(df):
     except Exception as e:
         logging.error(f"Error preparing yearly gender data: {str(e)}")
         return pd.DataFrame()
+
+def get_education_areas(df):
+    """
+    Gets unique education areas from the dataframe.
     
+    Parameters:
+        df: Student dataframe
+        
+    Returns:
+        list: List of unique education areas
+    """
+    if df.empty:
+        return []
+    
+    try:
+        # Get unique values
+        areas = df["utbildningsområde"].unique().tolist()
+        # Filter out "totalt" and sort alphabetically
+        areas = [area for area in areas if area.lower() != "totalt"]
+        areas.sort()
+        # Add "Alla områden" at the beginning
+        return ["Alla områden"] + areas
+    
+    except Exception as e:
+        logging.error(f"Error getting education areas: {str(e)}")
+        return []
+    
+
 # --------- TAIPY CALLBACK FUNCTIONS ---------
 
 def on_year_change(state):
@@ -76,9 +104,40 @@ def on_year_change(state):
             state.selected_year, 
             show_title=False
             )
+        # Create age distribution chart with the selected education area
+        state.age_chart = create_age_gender_chart(
+            filtered_data,
+            state.selected_year,
+            state.selected_education_area,
+            show_title=False
+        )
     
     except Exception as e:
         logging.error(f"Error in year change callback: {str(e)}")
+    
+    return state
+
+def on_education_area_change(state):
+    """
+    Callback for when the education area selection changes.
+    
+    Parameters:
+        state: Taipy state object
+    """
+    try:
+        # Get current filtered data for the selected year
+        filtered_data = filter_data_by_year(state.df, state.selected_year)
+        
+        # Update only the age chart with the new education area
+        state.age_chart = create_age_gender_chart(
+            filtered_data,
+            state.selected_year,
+            state.selected_education_area,
+            show_title=False
+        )
+    
+    except Exception as e:
+        logging.error(f"Error in education area change callback: {str(e)}")
     
     return state
 
@@ -96,6 +155,9 @@ df = preprocess_student_data(raw_df)
 available_years = get_available_years(df)
 selected_year = available_years[-1] if available_years else "2024"
 
+# Get education areas for filtering
+education_areas = get_education_areas(df)
+selected_education_area = "Alla områden"
 
 # Create initial chart if data is available
 student_chart = None
@@ -112,6 +174,14 @@ if not file_not_found:
     yearly_data = prepare_yearly_gender_data(df)
     yearly_chart = create_yearly_gender_chart(
         yearly_data, 
+        show_title=False
+    )
+
+    # Create age distribution chart
+    age_chart = create_age_gender_chart(
+        filtered_data,
+        selected_year,
+        selected_education_area,
         show_title=False
     )
 
@@ -162,6 +232,23 @@ with tgb.Page() as students_page:
                 with tgb.part(class_name="card"):
                     tgb.chart(figure="{student_chart}", type="plotly")
             
+            # Add age distribution chart
+                tgb.text(f"### Åldersfördelning bland antagna studenter i {selected_year}", mode="md")
+                with tgb.layout(columns="1 2"):
+                    tgb.text("Välj utbildningsområde:", mode="md")
+                    tgb.selector(
+                        value="{selected_education_area}",
+                        lov=education_areas,
+                        dropdown=True,
+                        on_change=on_education_area_change
+                    )
+                tgb.text(
+                    "Diagrammet visar antal kvinnor (orange) och män (blå) fördelade på åldersgrupper. "
+                    "Filtrera per utbildningsområde för att se åldersfördelningen inom specifika områden.", 
+                    mode="md"
+                )
+                with tgb.part(class_name="card"):
+                    tgb.chart(figure="{age_chart}", type="plotly")
             # Data table 
             with tgb.part(class_name="card"):
                 tgb.text("### Rådata", mode="md")
