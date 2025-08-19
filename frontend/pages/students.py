@@ -31,7 +31,11 @@ def on_year_change(state):
         pivot_data = prepare_education_gender_data(filtered_data)
         
         # Create chart
-        state.student_chart = create_education_gender_chart(pivot_data, state.selected_year)
+        state.student_chart = create_education_gender_chart(
+            pivot_data, 
+            state.selected_year, 
+            show_title=False
+            )
     
     except Exception as e:
         logging.error(f"Error in year change callback: {str(e)}")
@@ -57,7 +61,11 @@ student_chart = None
 if not file_not_found:
     filtered_data = filter_data_by_year(df, selected_year)
     pivot_data = prepare_education_gender_data(filtered_data)
-    student_chart = create_education_gender_chart(pivot_data, selected_year)
+    student_chart = create_education_gender_chart(
+            pivot_data, 
+            selected_year, 
+            show_title=False
+    )
 
 # --------- UI DEFINITION ---------
 
@@ -65,17 +73,12 @@ with tgb.Page() as students_page:
     with tgb.part(class_name="page-container"):
         with tgb.part(class_name="dashboard-content card stack-large"):
             # Navigation bar
-            tgb.navbar([
-                ("Home", "/"),
-                ("Counties", "/county"),
-                ("Providers", "/providers"),
-                ("Students", "/students", True)
-            ])
+            tgb.navbar()
             
             # Page title
             with tgb.part(class_name="card"):
-                tgb.text("## Antal antagna som påbörjat studier", mode="md")
-                
+                tgb.text(f"## Statistik över antagna som påbörjat YH-studier", mode="md")
+
                 # Show warning if file not found
                 if file_not_found:
                     with tgb.part(class_name="warning-box"):
@@ -84,8 +87,9 @@ with tgb.Page() as students_page:
                         if error_message:
                             tgb.text(f"Felmeddelande: {error_message}", mode="md")
                 else:
-                    tgb.text(f"Visar data för antagna studenter per utbildningsområde uppdelat på kön.", mode="md")
-            
+                    tgb.text("Visar data för antagna som påbörjat YH-studier med möjlighet att analysera "
+                            "fördelningen per utbildningsområde, kön och åldersgrupp över tid.", mode="md")
+
             # Year selector (if data loaded)
             if not file_not_found and available_years:
                 with tgb.part(class_name="card"):

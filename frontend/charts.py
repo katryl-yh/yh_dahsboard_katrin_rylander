@@ -540,26 +540,80 @@ def credits_histogram(
 
 # --------- VISUALIZATION FUNCTIONS ---------
 
-def create_education_gender_chart(pivot_df, year):
+def create_education_gender_chart(
+    pivot_df: pd.DataFrame, 
+    year: str,
+    *,
+    show_title: bool = True,
+    custom_title: str | None = None,
+    xtick_size: int = 11,
+    ytick_size: int = 12,
+    title_size: int = 18,
+    legend_font_size: int = 12,
+    label_font_size: int = 11,
+    font_family: str = "Arial",
+) -> go.Figure:
     """
     Creates a horizontal stacked bar chart for gender distribution by education area.
     
     Parameters:
         pivot_df: Pivot table with utbildningsområde and gender data
         year: Year being displayed
+        show_title: Whether to display a title
+        custom_title: Optional custom title text
+        xtick_size: Font size for x-axis ticks
+        ytick_size: Font size for y-axis ticks
+        title_size: Font size for chart title
+        legend_font_size: Font size for legend
+        label_font_size: Font size for labels
+        font_family: Font family for all text
         
     Returns:
         Plotly figure object
     """
     if pivot_df.empty:
-        # Return empty figure
+        # Return empty figure with proper styling
         fig = go.Figure()
-        fig.update_layout(
-            title="Ingen data tillgänglig",
-            height=500,
-            plot_bgcolor="white",
-            paper_bgcolor="white"
-        )
+        layout_args = {
+            "height": 500,
+            "margin": dict(l=120, r=30, t=80 if show_title else 20, b=40),
+            "plot_bgcolor": "white",
+            "paper_bgcolor": "white",
+            "showlegend": False,
+            "xaxis": dict(
+                showline=True, linecolor=GRAY_12,
+                tickfont=dict(size=xtick_size, color=GRAY_12, family=font_family),
+                zeroline=False,
+                automargin=True,
+                showgrid=False,
+                title=dict(
+                    text="<b>ANTAL STUDENTER</b>",
+                    font=dict(size=label_font_size, family=font_family),
+                    standoff=15,
+                ),
+            ),
+            "yaxis": dict(
+                showline=True, linecolor=GRAY_12,
+                tickfont=dict(size=ytick_size, color=GRAY_12, family=font_family),
+                zeroline=False,
+                automargin=True,
+                showgrid=False,
+                title=dict(
+                    text="<b>UTBILDNINGSOMRÅDE</b>",
+                    font=dict(size=label_font_size, family=font_family),
+                    standoff=15,
+                ),
+            ),
+        }
+        
+        # Only add title if requested
+        if show_title:
+            layout_args["title"] = dict(
+                text="Ingen data tillgänglig",
+                font=dict(size=title_size, family=font_family),
+            )
+            
+        fig.update_layout(**layout_args)
         return fig
     
     try:
@@ -572,7 +626,9 @@ def create_education_gender_chart(pivot_df, year):
             y=pivot_df["utbildningsområde"],
             name="Kvinnor",
             orientation="h",
-            marker_color="#f59e0b"  # Orange
+            marker_color="#f59e0b",  # Orange
+            hovertemplate="Utbildningsområde: %{y}<br>Kvinnor: %{x}<extra></extra>",
+            legendrank=1,
         ))
         
         fig.add_trace(go.Bar(
@@ -580,7 +636,9 @@ def create_education_gender_chart(pivot_df, year):
             y=pivot_df["utbildningsområde"],
             name="Män",
             orientation="h",
-            marker_color="#0284c7"  # Blue
+            marker_color="#0284c7",  # Blue
+            hovertemplate="Utbildningsområde: %{y}<br>Män: %{x}<extra></extra>",
+            legendrank=2,
         ))
         
         # Add total markers
@@ -590,38 +648,91 @@ def create_education_gender_chart(pivot_df, year):
             mode="markers",
             name="Totalt",
             marker=dict(color="#4A606C", size=10, symbol="circle"),
-            showlegend=True
+            hovertemplate="Utbildningsområde: %{y}<br>Totalt: %{x}<extra></extra>",
+            showlegend=True,
+            legendrank=3,
         ))
         
         # Layout configuration
-        fig.update_layout(
-            barmode="stack",
-            title=f"Antal antagna per utbildningsområde ({year})",
-            xaxis_title="Antal studenter",
-            yaxis_title="Utbildningsområde",
-            plot_bgcolor="white",
-            paper_bgcolor="white",
-            height=550,
-            margin=dict(l=10, r=10, t=50, b=10),
-            legend=dict(
+        layout_args = {
+            "barmode": "stack",
+            "bargap": 0.25,
+            "height": 550,
+            "margin": dict(l=120, r=30, t=80 if show_title else 20, b=40),
+            "plot_bgcolor": "white",
+            "paper_bgcolor": "white",
+            "showlegend": True,
+            "legend": dict(
                 orientation="h",
                 yanchor="bottom", 
                 y=1.02,
                 xanchor="center", 
-                x=0.5
-            )
-        )
+                x=0.5,
+                font=dict(size=legend_font_size, family=font_family),
+                traceorder="normal",
+            ),
+            "font": dict(family=font_family),
+            "xaxis": dict(
+                showline=True, 
+                linecolor=GRAY_12,
+                tickfont=dict(size=xtick_size, color=GRAY_12, family=font_family),
+                zeroline=False,
+                automargin=True,
+                showgrid=False,  # Remove horizontal grid lines
+                title=dict(
+                    text="<b>ANTAL STUDENTER</b>",
+                    font=dict(size=label_font_size, family=font_family),
+                    standoff=15,
+                ),
+            ),
+            "yaxis": dict(
+                showline=True, 
+                linecolor=GRAY_12,
+                tickfont=dict(size=ytick_size, color=GRAY_12, family=font_family),
+                zeroline=False,
+                automargin=True,
+                showgrid=False,  # Remove vertical grid lines
+                title=dict(
+                    text="<b>UTBILDNINGSOMRÅDE</b>",
+                    font=dict(size=label_font_size, family=font_family),
+                    standoff=15,
+                ),
+                categoryorder="array", 
+                categoryarray=pivot_df["utbildningsområde"].tolist(),
+            ),
+        }
         
+        # Only add title if requested
+        if show_title:
+            title_text = custom_title
+            if title_text is None:
+                title_text = f"Antal antagna per utbildningsområde ({year})"
+                
+            layout_args["title"] = dict(
+                text=title_text,
+                font=dict(size=title_size, family=font_family),
+            )
+        
+        fig.update_layout(**layout_args)
         return fig
         
     except Exception as e:
+        import logging
         logging.error(f"Error creating chart: {str(e)}")
         # Return error figure
         fig = go.Figure()
-        fig.update_layout(
-            title=f"Fel vid skapande av diagram: {str(e)}",
-            height=500,
-            plot_bgcolor="white",
-            paper_bgcolor="white"
-        )
+        layout_args = {
+            "height": 500,
+            "margin": dict(l=120, r=30, t=80 if show_title else 20, b=40),
+            "plot_bgcolor": "white",
+            "paper_bgcolor": "white",
+        }
+        
+        if show_title:
+            layout_args["title"] = dict(
+                text=f"Fel vid skapande av diagram: {str(e)}",
+                font=dict(size=title_size, family=font_family),
+            )
+            
+        fig.update_layout(**layout_args)
         return fig
