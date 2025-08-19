@@ -729,3 +729,213 @@ def create_education_gender_chart(
             
         fig.update_layout(**base_layout)
         return fig
+    
+
+def create_yearly_gender_chart(
+    df: pd.DataFrame, 
+    *,
+    show_title: bool = True,
+    custom_title: str | None = None,
+    xtick_size: int = 11,
+    ytick_size: int = 12,
+    title_size: int = 18,
+    legend_font_size: int = 12,
+    label_font_size: int = 11,
+    font_family: str = "Arial",
+) -> go.Figure:
+    """
+    Creates a vertical stacked bar chart showing gender distribution across years.
+    
+    Parameters:
+        df: DataFrame with yearly gender data (should have columns for years and rows for gender)
+        show_title: Whether to display a title
+        custom_title: Optional custom title text
+        xtick_size: Font size for x-axis ticks
+        ytick_size: Font size for y-axis ticks
+        title_size: Font size for chart title
+        legend_font_size: Font size for legend
+        label_font_size: Font size for labels
+        font_family: Font family for all text
+        
+    Returns:
+        Plotly figure object
+    """
+    # Define the base layout configuration
+    base_layout = {
+        "height": 450,
+        "margin": dict(l=80, r=30, t=80 if show_title else 20, b=60),
+        "plot_bgcolor": "white",
+        "paper_bgcolor": "white",
+        "showlegend": True,
+        "barmode": "stack",  # Ensure bars are stacked
+        "bargap": 0.3,       # Spacing between bars
+        "xaxis": dict(
+            showline=True, 
+            linecolor=GRAY_12,
+            tickfont=dict(size=xtick_size, color=GRAY_12, family=font_family),
+            zeroline=False,
+            automargin=True,
+            showgrid=False,
+            type="category",  # Treat x-axis as categorical
+        ),
+        "yaxis": dict(
+            showline=True, 
+            linecolor=GRAY_12,
+            tickfont=dict(size=ytick_size, color=GRAY_12, family=font_family),
+            zeroline=True,            
+            zerolinecolor=GRAY_12,    
+            zerolinewidth=1,          
+            automargin=True,
+            showgrid=False,
+            rangemode="tozero",
+        ),
+        # Add custom annotations for axis titles
+        "annotations": [
+            # X-axis title annotation
+            dict(
+                text="<b>ÅR</b>",
+                font=dict(size=label_font_size+2, family=font_family),
+                xref="paper", yref="paper",
+                x=0.5,  # Center of plot
+                y=-0.15,  # Below the x-axis
+                showarrow=False,
+                xanchor="center",  
+                yanchor="top",
+            ),
+            # Y-axis title annotation
+            dict(
+                text="<b>ANTAL STUDENTER</b>",
+                font=dict(size=label_font_size+2, family=font_family),
+                xref="paper", yref="paper",
+                x=-0.08,  # Left of y-axis
+                y=0.5,    # Middle of plot
+                showarrow=False,
+                xanchor="center",
+                yanchor="middle",
+                textangle=270,  # Vertical text
+            ),
+        ],
+        "font": dict(family=font_family),
+        "legend": dict(
+            orientation="h",
+            yanchor="bottom", 
+            y=1.02,
+            xanchor="center", 
+            x=0.5,
+            font=dict(size=legend_font_size, family=font_family),
+            traceorder="normal",
+        ),
+    }
+    
+    # Create figure
+    fig = go.Figure()
+    
+    # Handle empty dataframe case
+    if df.empty:
+        if show_title:
+            base_layout["title"] = dict(
+                text="Ingen data tillgänglig",
+                font=dict(size=title_size, family=font_family),
+            )
+        
+        fig.update_layout(**base_layout)
+        return fig
+    
+    try:
+        # Transform data to have years as columns if needed
+        if "år" in df.columns and "kön" in df.columns and "antal" in df.columns:
+            # Data is in long format, need to pivot
+            pivot_df = df.pivot_table(
+                index="år",
+                columns="kön",
+                values="antal",
+                aggfunc="sum"
+            ).fillna(0).reset_index()
+            
+            # Rename columns for consistency
+            pivot_df.columns.name = None
+            pivot_df.rename(columns={
+                "kvinnor": "Kvinnor",
+                "män": "Män",
+                "totalt": "Totalt"
+            }, inplace=True)
+            
+            # Ensure columns are present
+            for col in ["Kvinnor", "Män", "Totalt"]:
+                if col not in pivot_df.columns:
+                    pivot_df[col] = 0
+                    
+            # Sort by year
+            pivot_df = pivot_df.sort_values("år")
+            
+            years = pivot_df["år"].tolist()
+            women_values = pivot_df["Kvinnor"].tolist()
+            men_values = pivot_df["Män"].tolist()
+            total_values = pivot_df["Totalt"].tolist()
+        else:
+            # Assume data is already in correct format
+            # Expecting columns: Year (or similar), Kvinnor, Män, Totalt
+            # First column is assumed to be years
+            years = df.iloc[:, 0].tolist()
+            women_values = df["Kvinnor"].tolist() if "Kvinnor" in df.columns else [0] * len(years)
+            men_values = df["Män"].tolist() if "Män" in df.columns else [0] * len(years)
+            total_values = df["Totalt"].tolist() if "Totalt" in df.columns else [0] * len(years)
+        
+        # Add stacked bars
+        fig.add_trace(go.Bar(
+            x=years,
+            y=women_values,
+            name="Kvinnor",
+            marker_color=ORANGE_1,  # Use ORANGE_1 instead of hardcoded value
+            hovertemplate="År: %{x}<br>Kvinnor: %{y}<extra></extra>",
+            legendrank=1,
+        ))
+        
+        fig.add_trace(go.Bar(
+            x=years,
+            y=men_values,
+            name="Män",
+            marker_color=BLUE_1,  # Use BLUE_1 instead of BLUE_2
+            hovertemplate="År: %{x}<br>Män: %{y}<extra></extra>",
+            legendrank=2,
+        ))
+        
+        # Add total markers
+        fig.add_trace(go.Scatter(
+            x=years,
+            y=total_values,
+            mode="markers",
+            name="Totalt",
+            marker=dict(color=GRAY_12, size=10, symbol="circle"),  # Use GRAY_12 instead of GRAY_DARK
+            hovertemplate="År: %{x}<br>Totalt: %{y}<extra></extra>",
+            showlegend=True,
+            legendrank=3,
+        ))
+        
+        # Only add title if requested
+        if show_title:
+            title_text = custom_title
+            if title_text is None:
+                title_text = "Antal antagna studenter per år"
+                
+            base_layout["title"] = dict(
+                text=title_text,
+                font=dict(size=title_size, family=font_family),
+            )
+        
+        fig.update_layout(**base_layout)
+        return fig
+        
+    except Exception as e:
+        import logging
+        logging.error(f"Error creating yearly gender chart: {str(e)}")
+        
+        # Use base layout for error case
+        if show_title:
+            base_layout["title"] = dict(
+                text=f"Fel vid skapande av diagram: {str(e)}",
+                font=dict(size=title_size, family=font_family),
+            )
+            
+        fig.update_layout(**base_layout)
+        return fig
