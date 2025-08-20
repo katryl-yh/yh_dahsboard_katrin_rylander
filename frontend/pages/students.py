@@ -255,7 +255,7 @@ with tgb.Page() as students_page:
                             lov=education_areas,
                             dropdown=True,
                             on_change=on_education_area_change,
-                            class_name="padded-selector"
+                            class_name="wide-selector"
                         )
                     tgb.text(
                         "Diagrammet visar antal kvinnor (orange) och män (blå) fördelade på åldersgrupper.  \n "

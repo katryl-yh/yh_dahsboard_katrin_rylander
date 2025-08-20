@@ -111,7 +111,13 @@ with tgb.Page() as providers_page:
                 tgb.text(
                     "Välj en utbildningsanordnare för att se statistik och KPIer.",
                     mode="md")
-                tgb.selector("{selected_provider}", lov=all_providers, dropdown=True, on_change=on_provider_change,class_name="wide-selector")
+                tgb.selector(
+                    "{selected_provider}", 
+                    lov=all_providers, 
+                    dropdown=True, 
+                    on_change=on_provider_change,
+                    class_name="wide-selector"
+                    )
             
                 with tgb.layout(columns="1 1 1"):
                     with tgb.part(class_name="stat-card"):
