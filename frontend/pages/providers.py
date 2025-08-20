@@ -10,16 +10,9 @@ from backend.data_processing import (
 
 from frontend.viewmodels import compute_provider_view
 from utils.chart_style import CHART_STYLE
+from utils.ui_helpers import safe_refresh
 
 logging.basicConfig(level=logging.WARNING)
-
-def _safe_refresh(state, *var_names):
-    if hasattr(state, "refresh"):
-        for v in var_names:
-            try:
-                state.refresh(v)
-            except Exception as e:
-                logging.warning("refresh(%s) failed: %s", v, e)
 
 # Load & prepare data
 df = load_base_df()
@@ -91,7 +84,7 @@ def on_provider_change(state, var_name=None, var_value=None):
         logging.warning("on_provider_change failed for '%s': %s", selected, e)
         
     # Refresh all state variables
-    _safe_refresh(
+    safe_refresh(
         state,
         "selected_provider",
         "provider_rank_places",

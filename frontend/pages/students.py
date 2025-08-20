@@ -16,19 +16,13 @@ from backend.data_processing import (
     calculate_year_growth,     
 )
 from utils.constants import PROJECT_ROOT
+from utils.ui_helpers import safe_refresh, format_number
 from frontend.charts import (
     create_education_gender_chart,
     create_yearly_gender_chart,
     create_age_gender_chart
 )
 
-def _safe_refresh(state, *var_names):
-    if hasattr(state, "refresh"):
-        for v in var_names:
-            try:
-                state.refresh(v)
-            except Exception as e:
-                logging.warning("refresh(%s) failed: %s", v, e)
 # --------- TAIPY CALLBACK FUNCTIONS ---------
 
 def on_year_change(state):
@@ -74,7 +68,7 @@ def on_year_change(state):
         state.growth_class = growth_stats["growth_class"]
 
         # Use _safe_refresh to refresh all the updated state variables
-        _safe_refresh(
+        safe_refresh(
             state,
             "student_chart",
             "age_chart",
@@ -231,13 +225,13 @@ with tgb.Page() as students_page:
                         with tgb.part(class_name="stat-card"):
                             tgb.text("#### Andel kvinnor", mode="md")
                             tgb.text("**{year_women_pct}%**", mode="md")
-                            tgb.text("{year_women_count:,} kvinnor".replace(",", " "), mode="md")
+                            tgb.text(f"{format_number(year_women_count)} kvinnor", mode="md")
                         
                         with tgb.part(class_name="stat-card"):
                             tgb.text("#### Andel män", mode="md")
                             tgb.text("**{year_men_pct}%**", mode="md")
-                            tgb.text("{year_men_count:,} män".replace(",", " "), mode="md")
-                        
+                            tgb.text(f"{format_number(year_men_count)} män", mode="md")
+
                         with tgb.part(class_name="stat-card"):
                             tgb.text("#### Könsfördelning", mode="md")
                             tgb.text("**{year_gender_ratio}**", mode="md")
