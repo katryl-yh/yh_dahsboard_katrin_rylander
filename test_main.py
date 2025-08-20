@@ -2,6 +2,7 @@ from taipy.gui import Gui
 from frontend.pages.home import home_page
 from frontend.pages.county import county_page
 from frontend.pages.providers import providers_page
+from frontend.pages.providers_comp import providers_comp_page
 from frontend.pages.students import students_page
 
 
@@ -10,6 +11,7 @@ pages = {
     "län": county_page,
     "anordnare": providers_page,
     "antagna": students_page,
+    #"anordnare_jamfor": providers_comp_page,
 }
 
 
