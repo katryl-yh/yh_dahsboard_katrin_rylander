@@ -1078,10 +1078,6 @@ def create_age_gender_chart(
         # Reindex with our sorted age groups, excluding any not in the pivot index
         available_ages = [age for age in age_groups if age in pivot_age.index]
         pivot_age = pivot_age.reindex(available_ages)
-        
-        # Reindex with our sorted age groups, excluding any not in the pivot index
-        available_ages = [age for age in age_groups if age in pivot_age.index]
-        pivot_age = pivot_age.reindex(available_ages)
 
         # You should also drop "Totalt" from the pivot_age index if it exists
         if "Totalt" in pivot_age.index:

@@ -10,6 +10,8 @@ from backend.data_processing import (
     get_available_years,
     filter_data_by_year,
     prepare_education_gender_data,
+    prepare_yearly_gender_data,  
+    get_education_areas,         
 )
 from utils.constants import PROJECT_ROOT
 from frontend.charts import (
@@ -17,70 +19,7 @@ from frontend.charts import (
     create_yearly_gender_chart,
     create_age_gender_chart
 )
-# --------- DATA PREPARATION FUNCTIONS ---------
 
-def prepare_yearly_gender_data(df):
-    """
-    Prepares data for yearly gender visualization.
-    
-    Parameters:
-        df: Processed student dataframe
-        
-    Returns:
-        DataFrame: Filtered dataframe in long format with year totals
-    """
-    if df.empty:
-        return pd.DataFrame()
-    
-    try:
-        # Melt to long format if not already
-        if "år" not in df.columns:
-            df_long = df.melt(
-                id_vars=["kön", "utbildningsområde", "ålder"],
-                var_name="år",
-                value_name="antal"
-            )
-        else:
-            df_long = df.copy()
-        
-        # Filter for total age group and education area
-        df_filtered = df_long[
-            (df_long["ålder"].str.lower() == "totalt") & 
-            (df_long["utbildningsområde"].str.lower() == "totalt")
-        ]
-        
-        return df_filtered
-        
-    except Exception as e:
-        logging.error(f"Error preparing yearly gender data: {str(e)}")
-        return pd.DataFrame()
-
-def get_education_areas(df):
-    """
-    Gets unique education areas from the dataframe.
-    
-    Parameters:
-        df: Student dataframe
-        
-    Returns:
-        list: List of unique education areas
-    """
-    if df.empty:
-        return []
-    
-    try:
-        # Get unique values
-        areas = df["utbildningsområde"].unique().tolist()
-        # Filter out "totalt" and sort alphabetically
-        areas = [area for area in areas if area.lower() != "totalt"]
-        areas.sort()
-        # Add "Alla områden" at the beginning
-        return ["Alla områden"] + areas
-    
-    except Exception as e:
-        logging.error(f"Error getting education areas: {str(e)}")
-        return []
-    
 
 # --------- TAIPY CALLBACK FUNCTIONS ---------
 
@@ -145,7 +84,7 @@ def on_education_area_change(state):
 
 # Get file path using project constants for consistency
 file_path = PROJECT_ROOT / "data" / "scb" / "Antagna som påbörjat studier på yrkeshögskolans kurser.csv"
-print(f"Looking for file at: {file_path}")
+
 
 # Load and process data
 raw_df, file_not_found, error_message = load_student_data(file_path)

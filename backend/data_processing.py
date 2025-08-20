@@ -354,7 +354,7 @@ def summarize_providers(df: pd.DataFrame, provider_col: str = "Anordnare namn") 
 
     return out
 
-# --------- DATA LOADING FUNCTIONS ---------
+# --------- DATA LOADING FUNCTIONS STUDENT ---------
 
 def load_student_data(file_path):
     """
@@ -426,6 +426,8 @@ def get_available_years(df):
         return []
         
     return sorted([col for col in df.columns[3:] if str(col).isdigit()])
+
+
 
 # --------- DATA FILTERING FUNCTIONS ---------
 
@@ -514,3 +516,68 @@ def prepare_education_gender_data(df_year, exclude_total=True):
     except Exception as e:
         logging.error(f"Error preparing education gender data: {str(e)}")
         return pd.DataFrame()
+
+# --------- DATA PREPARATION FUNCTIONS STUDENTS ---------
+
+def prepare_yearly_gender_data(df):
+    """
+    Prepares data for yearly gender visualization.
+    
+    Parameters:
+        df: Processed student dataframe
+        
+    Returns:
+        DataFrame: Filtered dataframe in long format with year totals
+    """
+    if df.empty:
+        return pd.DataFrame()
+    
+    try:
+        # Melt to long format if not already
+        if "år" not in df.columns:
+            df_long = df.melt(
+                id_vars=["kön", "utbildningsområde", "ålder"],
+                var_name="år",
+                value_name="antal"
+            )
+        else:
+            df_long = df.copy()
+        
+        # Filter for total age group and education area
+        df_filtered = df_long[
+            (df_long["ålder"].str.lower() == "totalt") & 
+            (df_long["utbildningsområde"].str.lower() == "totalt")
+        ]
+        
+        return df_filtered
+        
+    except Exception as e:
+        logging.error(f"Error preparing yearly gender data: {str(e)}")
+        return pd.DataFrame()
+    
+def get_education_areas(df):
+    """
+    Gets unique education areas from the dataframe.
+    
+    Parameters:
+        df: Student dataframe
+        
+    Returns:
+        list: List of unique education areas
+    """
+    if df.empty:
+        return []
+    
+    try:
+        # Get unique values
+        areas = df["utbildningsområde"].unique().tolist()
+        # Filter out "totalt" and sort alphabetically
+        areas = [area for area in areas if area.lower() != "totalt"]
+        areas.sort()
+        # Add "Alla områden" at the beginning
+        return ["Alla områden"] + areas
+    
+    except Exception as e:
+        logging.error(f"Error getting education areas: {str(e)}")
+        return []
+    
