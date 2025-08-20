@@ -11,7 +11,8 @@ from backend.data_processing import (
     filter_data_by_year,
     prepare_education_gender_data,
     prepare_yearly_gender_data,  
-    get_education_areas,         
+    get_education_areas, 
+    calculate_gender_distribution,        
 )
 from utils.constants import PROJECT_ROOT
 from frontend.charts import (
@@ -50,6 +51,15 @@ def on_year_change(state):
             state.selected_education_area,
             show_title=False
         )
+
+        # Update gender stats for the selected year
+        year_gender_stats = calculate_gender_distribution(state.df, state.selected_year)
+        state.year_women_pct = year_gender_stats["women_pct"]
+        state.year_men_pct = year_gender_stats["men_pct"]
+        state.year_gender_ratio = year_gender_stats["ratio_simple"]
+        state.year_women_count = year_gender_stats["women_count"]
+        state.year_men_count = year_gender_stats["men_count"]
+    
     
     except Exception as e:
         logging.error(f"Error in year change callback: {str(e)}")
@@ -124,6 +134,22 @@ if not file_not_found:
         show_title=False
     )
 
+# Get all-time gender stats
+gender_stats = calculate_gender_distribution(df)
+women_pct = gender_stats["women_pct"]
+men_pct = gender_stats["men_pct"]
+gender_ratio = gender_stats["ratio_simple"]
+women_count = gender_stats["women_count"]
+men_count = gender_stats["men_count"]
+
+# Also calculate year-specific gender stats
+year_gender_stats = calculate_gender_distribution(df, selected_year)
+year_women_pct = year_gender_stats["women_pct"]
+year_men_pct = year_gender_stats["men_pct"]
+year_gender_ratio = year_gender_stats["ratio_simple"]
+year_women_count = year_gender_stats["women_count"]
+year_men_count = year_gender_stats["men_count"]
+
 # --------- UI DEFINITION ---------
 
 with tgb.Page() as students_page:
@@ -162,7 +188,24 @@ with tgb.Page() as students_page:
                                 on_change=on_year_change,
                                 class_name="padded-selector"
                                 )
-                    
+                    tgb.text("#### Könsfördelning bland YH-studenter {selected_year}", mode="md")
+    
+                    with tgb.layout(columns="1 1 1"):
+                        with tgb.part(class_name="stat-card"):
+                            tgb.text("#### Andel kvinnor", mode="md")
+                            tgb.text("**{year_women_pct}%**", mode="md")
+                            tgb.text("{year_women_count:,} kvinnor".replace(",", " "), mode="md")
+                        
+                        with tgb.part(class_name="stat-card"):
+                            tgb.text("#### Andel män", mode="md")
+                            tgb.text("**{year_men_pct}%**", mode="md")
+                            tgb.text("{year_men_count:,} män".replace(",", " "), mode="md")
+                        
+                        with tgb.part(class_name="stat-card"):
+                            tgb.text("#### Könsfördelning", mode="md")
+                            tgb.text("**{year_gender_ratio}**", mode="md")
+                            tgb.text("( kvinnor : män )", mode="md")
+
                     tgb.text("#### Fördelning av antagna studenter per utbildningsområde i {selected_year}", mode="md")
                     tgb.text(
                         "Diagrammet visar antal kvinnor (orange) och män (blå) som påbörjat studier i varje utbildningsområde.  \n "
@@ -191,6 +234,6 @@ with tgb.Page() as students_page:
                     tgb.chart(figure="{age_chart}", type="plotly")
             
             # Data table 
-            tgb.text("### Rådata över antalet antagna som påbörjat YH-studier", mode="md")
-            with tgb.part(class_name="table-container"):
-                tgb.table("{df}", width="100%")
+            #tgb.text("### Rådata över antalet antagna som påbörjat YH-studier", mode="md")
+            #with tgb.part(class_name="table-container"):
+            #    tgb.table("{df}", width="100%")

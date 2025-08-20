@@ -580,4 +580,141 @@ def get_education_areas(df):
     except Exception as e:
         logging.error(f"Error getting education areas: {str(e)}")
         return []
+
+# Add this helper function for large ratios
+def simplify_large_ratio(a, b, max_terms=10):
+    """Simplify a large ratio to a small one with max_terms as the maximum allowed term."""
+    if a == 0 or b == 0:
+        return (0, 0)
+        
+    # Ensure a is the larger number
+    if a < b:
+        a, b = b, a
+        swapped = True
+    else:
+        swapped = False
+        
+    # Try to find small integers that approximate the ratio
+    ratio = a / b
+    best_error = float('inf')
+    best_pair = (1, 1)
     
+    # Try different denominators
+    for d in range(1, max_terms + 1):
+        n = round(ratio * d)
+        if n > max_terms:
+            continue
+            
+        error = abs(ratio - (n / d))
+        if error < best_error:
+            best_error = error
+            best_pair = (n, d)
+            
+    if swapped:
+        return best_pair[1], best_pair[0]
+    else:
+        return best_pair
+
+def calculate_gender_distribution(df, year=None):
+    """
+    Calculate gender distribution statistics from student data.
+    
+    Parameters:
+        df: Processed student dataframe
+        year: Optional specific year to calculate for (if None, uses all years)
+        
+    Returns:
+        dict: Dictionary with gender statistics
+    """
+    try:
+        # Get yearly data
+        yearly_data = prepare_yearly_gender_data(df)
+        if yearly_data.empty:
+            return {"women_pct": 0, "men_pct": 0, "ratio_simple": "0:0"}
+            
+        # Filter for specific year if provided
+        if year is not None:
+            year_str = str(year)
+            yearly_data = yearly_data[yearly_data["år"] == year_str]
+            
+            # Return default values if no data for this year
+            if yearly_data.empty:
+                return {"women_pct": 0, "men_pct": 0, "ratio_simple": "0:0"}
+            
+        # Sum across filtered data
+        women_total = yearly_data[yearly_data["kön"].str.lower() == "kvinnor"]["antal"].sum()
+        men_total = yearly_data[yearly_data["kön"].str.lower() == "män"]["antal"].sum()
+        all_students = women_total + men_total
+        
+        # Calculate percentages
+        if all_students > 0:
+            women_pct = round((women_total / all_students) * 100, 1)
+            men_pct = round((men_total / all_students) * 100, 1)
+        else:
+            women_pct = men_pct = 0
+            
+        # Calculate simplified ratio (e.g., 1:3)
+        if women_total > 0 and men_total > 0:
+            # Method 1: Use percentages to calculate a simple ratio
+            # For example, if women:men is 59%:41%, we want to get 3:2
+            # Start with the percentages
+            if all_students > 0:
+                women_pct_value = women_total / all_students
+                men_pct_value = men_total / all_students
+                
+                # Find the simplest representation by testing small integers
+                best_ratio = "1:1"  # Default
+                best_error = float('inf')
+                
+                # Try ratios with denominators from 1 to 10
+                for denominator in range(1, 11):
+                    # Calculate numerators
+                    women_numerator = round(women_pct_value * denominator)
+                    men_numerator = round(men_pct_value * denominator)
+                    
+                    # Skip if either is zero
+                    if women_numerator == 0 or men_numerator == 0:
+                        continue
+                        
+                    # Calculate error from the actual percentages
+                    test_women_pct = women_numerator / (women_numerator + men_numerator)
+                    test_men_pct = men_numerator / (women_numerator + men_numerator)
+                    
+                    error = abs(test_women_pct - women_pct_value) + abs(test_men_pct - men_pct_value)
+                    
+                    # Keep if this is the best approximation so far
+                    if error < best_error:
+                        best_error = error
+                        best_ratio = f"{women_numerator}:{men_numerator}"
+                        
+                        # If we get a perfect match, stop searching
+                        if error < 0.01:
+                            break
+                
+                ratio_simple = best_ratio
+            else:
+                # Fallback to original GCD method if we can't calculate percentages
+                import math
+                gcd = math.gcd(int(women_total), int(men_total))
+                ratio_women = int(women_total / gcd)
+                ratio_men = int(men_total / gcd)
+                
+                # If the ratio is still too complex, approximate it
+                if ratio_women > 10 or ratio_men > 10:
+                    ratio_women, ratio_men = simplify_large_ratio(women_total, men_total)
+                    
+                ratio_simple = f"{ratio_women}:{ratio_men}"
+        else:
+            ratio_simple = "0:0"
+            
+        return {
+            "women_pct": women_pct,
+            "men_pct": men_pct,
+            "women_count": int(women_total),
+            "men_count": int(men_total),
+            "ratio_simple": ratio_simple
+        }
+        
+    except Exception as e:
+        logging.error(f"Error calculating gender distribution: {str(e)}")
+        return {"women_pct": 0, "men_pct": 0, "ratio_simple": "0:0"}
