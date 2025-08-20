@@ -534,7 +534,7 @@ def create_education_gender_chart(
     *,
     height: int = CHART_STYLE["height"],
     show_title: bool = CHART_STYLE["show_title"],
-    title: str | None = None,  # Changed from custom_title
+    title: str | None = None,
     xtick_size: int = CHART_STYLE["xtick_size"],
     ytick_size: int = CHART_STYLE["ytick_size"],
     title_size: int = CHART_STYLE["title_size"],
@@ -544,6 +544,7 @@ def create_education_gender_chart(
 ) -> go.Figure:
     """
     Creates a horizontal stacked bar chart for gender distribution by education area.
+    Adds K:M ratio at the end of each bar.
     
     Parameters:
         pivot_df: Pivot table with utbildningsområde and gender data
@@ -648,6 +649,20 @@ def create_education_gender_chart(
         return fig
     
     try:
+        # Calculate K:M ratio for each education area
+        pivot_df['K_M_Ratio'] = pivot_df.apply(
+            lambda row: round(row["Kvinnor"] / row["Män"], 1) if row["Män"] > 0 else float('inf'), 
+            axis=1
+        )
+        
+        # Format ratio text
+        pivot_df['ratio_text'] = pivot_df.apply(
+            lambda row: f"{row['K_M_Ratio']:.1f}:1" if row['K_M_Ratio'] >= 1 
+                        else f"1:{round(1/row['K_M_Ratio'], 1)}" if row['K_M_Ratio'] > 0 
+                        else "0:0", 
+            axis=1
+        )
+        
         # Add stacked bars
         fig.add_trace(go.Bar(
             x=pivot_df["Kvinnor"],
@@ -669,7 +684,7 @@ def create_education_gender_chart(
             legendrank=2,
         ))
         
-        # Add total markers
+        """ # Add total markers
         fig.add_trace(go.Scatter(
             x=pivot_df["Totalt"],
             y=pivot_df["utbildningsområde"],
@@ -679,7 +694,21 @@ def create_education_gender_chart(
             hovertemplate="Utbildningsområde: %{y}<br>Totalt: %{x}<extra></extra>",
             showlegend=True,
             legendrank=3,
-        ))
+        )) """
+        
+        # Create annotations for the K:M ratio
+        ratio_annotations = []
+        for i, row in pivot_df.iterrows():
+            # Add K:M ratio text
+            ratio_annotations.append(dict(
+                x=row["Totalt"] + (row["Totalt"] * 0.05),  # Position after the bar with small offset
+                y=row["utbildningsområde"],
+                text=row["ratio_text"],
+                showarrow=False,
+                font=dict(color=GRAY_12, size=label_font_size, family=font_family),
+                xanchor="left",
+                yanchor="middle"
+            ))
         
         # Add additional layout configuration for non-empty data
         layout_args = base_layout.copy()
@@ -699,6 +728,12 @@ def create_education_gender_chart(
         if "yaxis" in layout_args:
             layout_args["yaxis"]["categoryorder"] = "array"
             layout_args["yaxis"]["categoryarray"] = pivot_df["utbildningsområde"].tolist()
+        
+        # Add the ratio annotations to any existing annotations
+        if "annotations" in layout_args:
+            layout_args["annotations"].extend(ratio_annotations)
+        else:
+            layout_args["annotations"] = ratio_annotations
         
         # Only add title if requested
         if show_title:
