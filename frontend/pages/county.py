@@ -125,24 +125,3 @@ with tgb.Page() as county_page:
                         tgb.text("### Rå data för {selected_county}", mode="md")
                         tgb.table("{df_selected_county}", width="100%")
 
-
-""" Gui(county_page).run(
-    port=8080,
-    dark_mode=False,
-    use_reloader=False,
-    data={
-        "df": df,
-        "all_counties": all_counties,
-        "selected_county": selected_county,
-        "df_selected_county": df_selected_county,
-        "summary": summary,
-        "stats": stats,
-        "total_courses": total_courses,
-        "approved_courses": approved_courses,
-        "approval_rate_str": approval_rate_str,
-        "requested_places": requested_places,
-        "approved_places": approved_places,
-        "county_chart": county_chart,
-        "county_histogram": county_histogram,
-    },
-) """

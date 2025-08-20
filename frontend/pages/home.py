@@ -116,20 +116,3 @@ with tgb.Page() as home_page:
                 tgb.chart(figure="{sweden_bar_chart}", type="plotly")
                 tgb.text("### Histogram över YH-poäng för beviljade och avslagna kurser", mode="md")
                 tgb.chart(figure="{sweden_histogram}", type="plotly")
-
-""" Gui(home_page).run(
-    port=8080,
-    dark_mode=False,
-    use_reloader=False,
-    data={
-        "df": df,
-        "sweden_map": sweden_map, 
-        "sweden_bar_chart": sweden_bar_chart, 
-        "sweden_histogram": sweden_histogram,
-        "national_total_courses": national_total_courses,
-        "national_approved_courses": national_approved_courses,
-        "national_approval_rate_str": national_approval_rate_str,
-        "national_requested_places": national_requested_places,
-        "national_approved_places": national_approved_places,
-    },
-) """
