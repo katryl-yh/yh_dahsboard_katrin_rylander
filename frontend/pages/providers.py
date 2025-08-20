@@ -8,11 +8,6 @@ from backend.data_processing import (
     summarize_providers,
 )
 
-from frontend.charts import ( 
-    provider_education_area_chart,
-    credits_histogram    
-)
-
 from frontend.viewmodels import compute_provider_view
 from utils.chart_style import CHART_STYLE
 
@@ -29,12 +24,30 @@ def _safe_refresh(state, *var_names):
 # Load & prepare data
 df = load_base_df()
 
-# Build providers table from enriched df (df is already enriched by load_base_df)
+# Build providers table from enriched df
 df_providers = summarize_providers(df)
 
 # ---------- Provider state (initial) ----------
 all_providers = sorted(df["Anordnare namn"].dropna().astype(str).str.strip().unique().tolist())
-selected_provider = all_providers[0] if all_providers else ""
+
+# Set a custom default provider
+all_providers = sorted(df["Anordnare namn"].dropna().astype(str).str.strip().unique().tolist())
+
+# Get the exact name as it appears in the data
+default_provider_name = "Stiftelsen Stockholms Tekniska Institut"
+providers_lower = {p.lower(): p for p in all_providers}
+default_provider_lower = default_provider_name.lower()
+
+if default_provider_lower in providers_lower:
+    # Use the correct case version from the data
+    selected_provider = providers_lower[default_provider_lower]
+else:
+    # Fallback
+    selected_provider = all_providers[0] if all_providers else ""
+
+print(f"Selected provider: {selected_provider}")
+
+# Calculate initial view model
 provider_vm = compute_provider_view(
     df,
     df_providers,
@@ -55,29 +68,31 @@ provider_histogram = provider_vm["provider_histogram"]
 def on_provider_change(state, var_name=None, var_value=None):
     if var_name != "selected_provider":
         return
+        
     selected = (str(var_value).strip() if var_value is not None else "").strip()
     if not selected or selected not in state.all_providers:
         return
+        
     state.selected_provider = selected
+    
     try:
+        # Get all provider data in one call
         vm = compute_provider_view(
             state.df,
             state.df_providers if hasattr(state, "df_providers") else df_providers,
             selected,
             **CHART_STYLE,
         )
-        state.provider_rank_places = vm["provider_rank_places"]
-        state.provider_rank_places_summary_str = vm["provider_rank_places_summary_str"]
-        state.provider_rank_courses = vm["provider_rank_courses"]                    
-        state.provider_rank_courses_summary_str = vm["provider_rank_courses_summary_str"]  
-        state.provider_places_summary_str = vm["provider_places_summary_str"]
-        state.provider_places_approval_rate_str = vm["provider_places_approval_rate_str"]
-        state.provider_courses_summary_str = vm["provider_courses_summary_str"]
-        state.provider_courses_approval_rate_str = vm["provider_courses_approval_rate_str"]
-        state.provider_chart = vm["provider_chart"]
-        state.provider_histogram = vm["provider_histogram"]
+        
+        # Update all state variables at once
+        for key, value in vm.items():
+            if hasattr(state, key):
+                setattr(state, key, value)
+                
     except Exception as e:
         logging.warning("on_provider_change failed for '%s': %s", selected, e)
+        
+    # Refresh all state variables
     _safe_refresh(
         state,
         "selected_provider",
@@ -105,7 +120,7 @@ with tgb.Page() as providers_page:
                 tgb.text(
                     "Välj en utbildningsanordnare för att se statistik och KPIer.",
                     mode="md")
-                tgb.selector("{selected_provider}", lov=all_providers, dropdown=True, on_change=on_provider_change)
+                tgb.selector("{selected_provider}", lov=all_providers, dropdown=True, on_change=on_provider_change,class_name="wide-selector")
             
                 with tgb.layout(columns="1 1 1"):
                     with tgb.part(class_name="stat-card"):
@@ -140,25 +155,4 @@ with tgb.Page() as providers_page:
                     "Tabellen är sorterad efter beviljade antal platser totalt, vilket innebär att vissa "
                     "anordnare fått högre värde på andra kolumner, men lägre plats i tabellen. ",
                     mode="md")
-                tgb.table("{df_providers}", width="100%")
-        
-    
-
-""" Gui(providers_page).run(
-    port=8080,
-    dark_mode=False,
-    use_reloader=False,
-    data={
-        "df": df,
-        "df_providers": df_providers,
-        # Provider bindings
-        "all_providers": all_providers,
-        "selected_provider": selected_provider,
-        "provider_rank_places": provider_rank_places,
-        "provider_places_summary_str": provider_places_summary_str,
-        "provider_places_approval_rate_str": provider_places_approval_rate_str,
-        "provider_courses_summary_str": provider_courses_summary_str,
-        "provider_courses_approval_rate_str": provider_courses_approval_rate_str,
-        "provider_chart": provider_chart,
-    },
-) """
+                tgb.table("{df_providers}", width="100%", page_size=10)

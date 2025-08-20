@@ -87,3 +87,15 @@
   width: 100%;
   margin-bottom: 10px;
 }
+
+.wide-selector {
+  width: 100%;  /* Takes full width of container */
+  max-width: 500px;  /* Or any width you prefer */
+  margin-bottom: 20px;
+}
+
+.wide-selector select,
+.wide-selector .tp-Select {
+  width: 100%;
+  min-width: 200px;  /* Minimum width */
+}
