@@ -45,8 +45,6 @@ else:
     # Fallback
     selected_provider = all_providers[0] if all_providers else ""
 
-print(f"Selected provider: {selected_provider}")
-
 # Calculate initial view model
 provider_vm = compute_provider_view(
     df,

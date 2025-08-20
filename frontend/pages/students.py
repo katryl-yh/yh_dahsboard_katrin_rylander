@@ -150,6 +150,7 @@ with tgb.Page() as students_page:
                         mode="md"
                     )
                     tgb.chart(figure="{yearly_chart}", type="plotly")
+                    tgb.text("  \n", mode="md") 
 
                 with tgb.part(class_name="card"):
                     with tgb.layout(columns="1 1"):
@@ -158,7 +159,8 @@ with tgb.Page() as students_page:
                                 value="{selected_year}", 
                                 lov=available_years,
                                 dropdown=True,
-                                on_change=on_year_change
+                                on_change=on_year_change,
+                                class_name="padded-selector"
                                 )
                     
                     tgb.text("#### Fördelning av antagna studenter per utbildningsområde i {selected_year}", mode="md")
@@ -178,7 +180,8 @@ with tgb.Page() as students_page:
                             value="{selected_education_area}",
                             lov=education_areas,
                             dropdown=True,
-                            on_change=on_education_area_change
+                            on_change=on_education_area_change,
+                            class_name="padded-selector"
                         )
                     tgb.text(
                         "Diagrammet visar antal kvinnor (orange) och män (blå) fördelade på åldersgrupper.  \n "

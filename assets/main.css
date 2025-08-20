@@ -99,3 +99,7 @@
   width: 100%;
   min-width: 200px;  /* Minimum width */
 }
+
+.padded-selector {
+  padding-top: 20px;  /* Adjust this value as needed */
+}
