@@ -144,6 +144,8 @@ def compute_county_view(
     approval_rate_str = f"{float(stats.get('Beviljandegrad (%)', 0.0)):.1f}%"
     requested_places = int(stats.get("Ansökta platser", 0))
     approved_places = int(stats.get("Beviljade platser", 0))
+    places_approval_rate = (approved_places / requested_places * 100) if requested_places > 0 else 0
+    places_approval_rate_str = f"{places_approval_rate:.1f}%"
 
     county_chart = education_area_chart(
         summary,
@@ -180,6 +182,7 @@ def compute_county_view(
         approval_rate_str=approval_rate_str,
         requested_places=requested_places,
         approved_places=approved_places,
+        places_approval_rate_str=places_approval_rate_str,
         county_chart=county_chart,
         county_histogram=county_histogram,
     )

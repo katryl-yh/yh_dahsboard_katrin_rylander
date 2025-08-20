@@ -37,6 +37,7 @@ approved_courses = county_vm["approved_courses"]
 approval_rate_str = county_vm["approval_rate_str"]
 requested_places = county_vm["requested_places"]
 approved_places = county_vm["approved_places"]
+places_approval_rate_str = county_vm["places_approval_rate_str"]
 county_chart = county_vm["county_chart"]
 county_histogram = county_vm["county_histogram"]
 
@@ -57,6 +58,7 @@ def on_county_change(state, var_name=None, var_value=None):
         state.approval_rate_str = vm["approval_rate_str"]
         state.requested_places = vm["requested_places"]
         state.approved_places = vm["approved_places"]
+        state.places_approval_rate_str = vm["places_approval_rate_str"]
         state.county_chart = vm["county_chart"]
         state.county_histogram = vm["county_histogram"]
     except Exception as e:
@@ -72,6 +74,7 @@ def on_county_change(state, var_name=None, var_value=None):
         "approval_rate_str",
         "requested_places",
         "approved_places",
+        "places_approval_rate_str",
         "county_chart",
         "county_histogram",
     )
@@ -110,7 +113,7 @@ with tgb.Page() as county_page:
                         tgb.text("**{requested_places}**", mode="md")
                     with tgb.part(class_name="stat-card"):
                         tgb.text("#### Beviljandegrad (platser)", mode="md")
-                        #tgb.text("**{}**", mode="md")
+                        tgb.text("**{places_approval_rate_str}**", mode="md")
                 
                 tgb.text("### Fördelning av beviljade och avslagna kursansökningar per utbildningsområde i {selected_county}", mode="md")
                 tgb.text(
