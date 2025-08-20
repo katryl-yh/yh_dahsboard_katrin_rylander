@@ -9,18 +9,23 @@ from frontend.charts import (
     provider_education_area_chart,
     credits_histogram,
 )
+from utils.chart_style import CHART_STYLE
 
 def compute_provider_view(
     df: pd.DataFrame,
     df_providers: pd.DataFrame,
     provider: str,
     *,
-    xtick_size: int = 11,
-    ytick_size: int = 12,
-    title_size: int = 18,
-    legend_font_size: int = 12,
-    label_font_size: int = 11,
-    font_family: str = "Arial",
+    # Add all current CHART_STYLE parameters
+    xtick_size: int = CHART_STYLE["xtick_size"],
+    ytick_size: int = CHART_STYLE["ytick_size"],
+    title_size: int = CHART_STYLE["title_size"],
+    legend_font_size: int = CHART_STYLE["legend_font_size"],
+    label_font_size: int = CHART_STYLE["label_font_size"],
+    font_family: str = CHART_STYLE["font_family"],
+    show_title: bool = CHART_STYLE["show_title"],  # Add this parameter
+    height: int = CHART_STYLE["height"],           # Add this parameter
+    **kwargs            
 ) -> Dict[str, Any]:
     row = pd.DataFrame()
     provider_norm = str(provider).strip()
@@ -39,25 +44,28 @@ def compute_provider_view(
             provider_chart=provider_education_area_chart(
                 df,
                 provider_norm,
-                show_title=False,
                 xtick_size=xtick_size,
                 ytick_size=ytick_size,
                 title_size=title_size,
                 legend_font_size=legend_font_size,
                 label_font_size=label_font_size,
                 font_family=font_family,
+                show_title=show_title,      
+                height=height, 
             ),
             # Add provider histogram
             provider_histogram=credits_histogram(
                 df,
                 None,  # No county filter
                 nbinsx=20,
-                show_title=False,
                 xtick_size=xtick_size,
                 ytick_size=ytick_size,
                 title_size=title_size,
                 legend_font_size=legend_font_size,
+                label_font_size=label_font_size,  
                 font_family=font_family,
+                show_title=show_title,            
+                height=height,
             ),
         )
 
@@ -86,25 +94,28 @@ def compute_provider_view(
         provider_chart=provider_education_area_chart(
             df,
             provider_norm,
-            show_title=False,
             xtick_size=xtick_size,
             ytick_size=ytick_size,
             title_size=title_size,
             legend_font_size=legend_font_size,
             label_font_size=label_font_size,
             font_family=font_family,
+            show_title=show_title,      
+            height=height,
         ),
         # Add provider histogram with filtered dataframe
         provider_histogram=credits_histogram(
             provider_df,  # Use filtered dataframe for this provider only
             None,  # No county filter
             nbinsx=20,
-            show_title=False,
             xtick_size=xtick_size,
             ytick_size=ytick_size,
             title_size=title_size,
             legend_font_size=legend_font_size,
+            label_font_size=label_font_size,  
             font_family=font_family,
+            show_title=show_title,            
+            height=height, 
         ),
     )
 
@@ -112,12 +123,16 @@ def compute_county_view(
     df: pd.DataFrame,
     county: str,
     *,
-    xtick_size: int = 11,
-    ytick_size: int = 12,
-    title_size: int = 18,
-    legend_font_size: int = 12,
-    label_font_size: int = 11,
-    font_family: str = "Arial",
+    # Use CHART_STYLE for all parameters
+    xtick_size: int = CHART_STYLE["xtick_size"],
+    ytick_size: int = CHART_STYLE["ytick_size"],
+    title_size: int = CHART_STYLE["title_size"],
+    legend_font_size: int = CHART_STYLE["legend_font_size"],
+    label_font_size: int = CHART_STYLE["label_font_size"],
+    font_family: str = CHART_STYLE["font_family"],
+    show_title: bool = CHART_STYLE["show_title"],
+    height: int = CHART_STYLE["height"],
+    **kwargs
 ) -> Dict[str, Any]:
     county_norm = str(county).strip()
     df_selected = df[df["Län"].astype(str).str.strip() == county_norm].copy()
@@ -133,24 +148,27 @@ def compute_county_view(
     county_chart = education_area_chart(
         summary,
         county_norm,
-        show_title=False,
         xtick_size=xtick_size,
         ytick_size=ytick_size,
         title_size=title_size,
         legend_font_size=legend_font_size,
         label_font_size=label_font_size,
         font_family=font_family,
+        show_title=show_title,      
+        height=height, 
     )
     county_histogram = credits_histogram(
         df,
         county_norm,
         nbinsx=20,
-        show_title=False,
         xtick_size=xtick_size,
         ytick_size=ytick_size,
         title_size=title_size,
         legend_font_size=legend_font_size,
+        label_font_size=label_font_size,  
         font_family=font_family,
+        show_title=show_title,            
+        height=height,
     )
 
     return dict(

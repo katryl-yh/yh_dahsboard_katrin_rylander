@@ -1,21 +1,49 @@
 from __future__ import annotations
 import plotly.graph_objects as go
 from utils.constants import BLUE_1, GRAY_1, GRAY_12, GRAY_2, ORANGE_1
+from utils.chart_style import CHART_STYLE
 import pandas as pd
+
+def get_chart_params(params=None):
+    """
+    Returns standardized chart parameters with defaults.
+    
+    Parameters:
+        params: Optional dictionary of parameters to override defaults
+        
+    Returns:
+        dict: Chart parameters with defaults
+    """
+    defaults = {
+        "show_title": CHART_STYLE["show_title"],
+        "title": None,  # Changed from custom_title to title
+        "height": CHART_STYLE["height"],
+        "xtick_size": CHART_STYLE["xtick_size"],
+        "ytick_size": CHART_STYLE["ytick_size"],
+        "title_size": CHART_STYLE["title_size"],
+        "legend_font_size": CHART_STYLE["legend_font_size"],
+        "label_font_size": CHART_STYLE["label_font_size"],
+        "font_family": CHART_STYLE["font_family"],
+    }
+    
+    if params:
+        defaults.update(params)
+        
+    return defaults
 
 def education_area_chart(
     df_summary,
     county: str,
-    height: int = 500,
-    title: str | None = None,
-    show_title: bool = True,  # Added parameter
-    # font controls (override from main.py)
-    xtick_size: int = 12,
-    ytick_size: int = 13,
-    title_size: int = 16,
-    legend_font_size: int = 12,
-    label_font_size: int = 12,      # approval-rate annotation font size
-    font_family: str = "Arial",
+    height: int = CHART_STYLE["height"],  # Use from CHART_STYLE
+    title: str | None = None,  # Changed from custom_title to title
+    show_title: bool = CHART_STYLE["show_title"],
+    # font controls
+    xtick_size: int = CHART_STYLE["xtick_size"],
+    ytick_size: int = CHART_STYLE["ytick_size"],
+    title_size: int = CHART_STYLE["title_size"],
+    legend_font_size: int = CHART_STYLE["legend_font_size"],
+    label_font_size: int = CHART_STYLE["label_font_size"],
+    font_family: str = CHART_STYLE["font_family"],
     **options
 ):
     """
@@ -26,9 +54,9 @@ def education_area_chart(
     Parameters:
         df_summary: DataFrame with Utbildningsområde, Ansökta utbildningar, and Beviljade utbildningar
         county: County name to show in the title
-        height: Chart height in pixels
-        title: Custom title (overrides default if provided)
-        show_title: Whether to display the title (default: True)
+        height: Chart height in pixels (default: 450)
+        title: Optional title text (overrides default if provided)
+        show_title: Whether to display the title (default: False)
         xtick_size: Font size for x-axis ticks
         ytick_size: Font size for y-axis ticks
         title_size: Font size for title
@@ -158,14 +186,15 @@ def provider_education_area_chart(
     df: pd.DataFrame,
     provider: str,
     *,
-    show_title: bool = True,
-    custom_title: str | None = None,  # Added this parameter
-    xtick_size: int = 11,
-    ytick_size: int = 12,
-    title_size: int = 18,
-    legend_font_size: int = 12,
-    label_font_size: int = 11,
-    font_family: str = "Arial",
+    height: int = CHART_STYLE["height"],
+    show_title: bool = CHART_STYLE["show_title"],
+    title: str | None = None,  
+    xtick_size: int = CHART_STYLE["xtick_size"],
+    ytick_size: int = CHART_STYLE["ytick_size"],
+    title_size: int = CHART_STYLE["title_size"],
+    legend_font_size: int = CHART_STYLE["legend_font_size"],
+    label_font_size: int = CHART_STYLE["label_font_size"],
+    font_family: str = CHART_STYLE["font_family"],
 ):
     """
     Horizontal stacked bar chart per educational area for a specific provider.
@@ -174,8 +203,9 @@ def provider_education_area_chart(
     Parameters:
         df: DataFrame with the data
         provider: Provider name to filter on
-        show_title: Whether to display a title (default: True)
-        custom_title: Optional custom title text (overrides default if provided)
+        height: Chart height in pixels (default: 450)
+        show_title: Whether to display a title (default: False)
+        title: Optional title text (overrides default if provided)
         xtick_size: Font size for x-axis ticks
         ytick_size: Font size for y-axis ticks
         title_size: Font size for chart title
@@ -220,7 +250,7 @@ def provider_education_area_chart(
         # Only add title if requested
         if show_title:
             layout_args["title"] = dict(
-                text=custom_title or f"Ansökningar per utbildningsområde – {provider} (inga data)",
+                text=title or f"Ansökningar per utbildningsområde – {provider}",
                 font=dict(size=title_size, family=font_family),
             )
             
@@ -282,7 +312,7 @@ def provider_education_area_chart(
     # Only add title if requested
     if show_title:
         layout_args["title"] = dict(
-            text=custom_title or f"Ansökningar per utbildningsområde – {provider}",
+            text=title or f"Ansökningar per utbildningsområde – {provider}",
             font=dict(size=title_size, family=font_family),
         )
     
@@ -309,15 +339,16 @@ def credits_histogram(
     df: pd.DataFrame,
     county: str | None = None,
     *,
+    height: int = CHART_STYLE["height"],
     nbinsx: int = 20,
-    xtick_size: int = 11,
-    ytick_size: int = 12,
-    title_size: int = 18,
-    legend_font_size: int = 12,
-    label_font_size: int = 11,
-    font_family: str = "Arial",
-    show_title: bool = True,
-    custom_title: str | None = None,
+    xtick_size: int = CHART_STYLE["xtick_size"],
+    ytick_size: int = CHART_STYLE["ytick_size"],
+    title_size: int = CHART_STYLE["title_size"],
+    legend_font_size: int = CHART_STYLE["legend_font_size"],
+    label_font_size: int = CHART_STYLE["label_font_size"],
+    font_family: str = CHART_STYLE["font_family"],
+    show_title: bool = CHART_STYLE["show_title"],
+    title: str | None = None,  # Changed from custom_title
 ) -> go.Figure:
     """
     Stacked histogram of YH credits for approved (blue) and rejected (gray).
@@ -326,20 +357,21 @@ def credits_histogram(
     Parameters:
         df: DataFrame with the data
         county: County to filter on, None for national data (Sverige)
+        height: Chart height in pixels (default: 450)
         nbinsx: Number of bins for histogram
         xtick_size, ytick_size: Font sizes for axis ticks
         title_size: Font size for chart title
         legend_font_size: Font size for legend
         label_font_size: Font size for labels
         font_family: Font family for all text
-        show_title: Whether to display a title (set to False to hide)
-        custom_title: Optional custom title text (overrides default if provided)
+        show_title: Whether to display a title (default: False)
+        title: Optional title text (overrides default if provided)
     """
     # Define common base layout used in all cases
     base_layout = {
         "barmode": "stack",
         "bargap": 0.25,
-        "height": 500,
+        "height": height,
         "margin": dict(l=120, r=30, t=80 if show_title else 20, b=40),
         "plot_bgcolor": "white",
         "paper_bgcolor": "white",
@@ -410,7 +442,7 @@ def credits_histogram(
         # Handle title for empty data
         if show_title:
             base_layout["title"] = dict(
-                text=custom_title or "Fördelning av YH-poäng",
+                text=title or "Fördelning av YH-poäng",
                 font=dict(size=title_size, family=font_family),
             )
         fig.update_layout(**base_layout)
@@ -430,7 +462,7 @@ def credits_histogram(
         # Handle title for empty filtered data
         if show_title:
             base_layout["title"] = dict(
-                text=custom_title or f"Fördelning av YH-poäng i {scope_label}",
+                text=title or f"Fördelning av YH-poäng i {scope_label}",
                 font=dict(size=title_size, family=font_family),
             )
         fig.update_layout(**base_layout)
@@ -444,7 +476,7 @@ def credits_histogram(
         base_layout["showlegend"] = False
         if show_title:
             base_layout["title"] = dict(
-                text=custom_title or f"Fördelning av YH-poäng i {scope_label} (saknar kolumn för poäng)",
+                text=title or f"Fördelning av YH-poäng i {scope_label} (saknar kolumn för poäng)",
                 font=dict(size=title_size, family=font_family),
             )
         fig.update_layout(**base_layout)
@@ -481,7 +513,7 @@ def credits_histogram(
     
     # Add chart title if requested
     if show_title:
-        title_text = custom_title
+        title_text = title
         if title_text is None:
             title_text = f"Fördelning av YH-poäng i {scope_label}"
             title_text += f"<br><sup>Beviljandegrad: {approval_rate:.1f}% ({approved_count} av {total_courses} kurser)</sup>"
@@ -500,14 +532,15 @@ def create_education_gender_chart(
     pivot_df: pd.DataFrame, 
     year: str,
     *,
-    show_title: bool = True,
-    custom_title: str | None = None,
-    xtick_size: int = 11,
-    ytick_size: int = 12,
-    title_size: int = 18,
-    legend_font_size: int = 12,
-    label_font_size: int = 11,
-    font_family: str = "Arial",
+    height: int = CHART_STYLE["height"],
+    show_title: bool = CHART_STYLE["show_title"],
+    title: str | None = None,  # Changed from custom_title
+    xtick_size: int = CHART_STYLE["xtick_size"],
+    ytick_size: int = CHART_STYLE["ytick_size"],
+    title_size: int = CHART_STYLE["title_size"],
+    legend_font_size: int = CHART_STYLE["legend_font_size"],
+    label_font_size: int = CHART_STYLE["label_font_size"],
+    font_family: str = CHART_STYLE["font_family"],
 ) -> go.Figure:
     """
     Creates a horizontal stacked bar chart for gender distribution by education area.
@@ -515,8 +548,9 @@ def create_education_gender_chart(
     Parameters:
         pivot_df: Pivot table with utbildningsområde and gender data
         year: Year being displayed
-        show_title: Whether to display a title
-        custom_title: Optional custom title text
+        height: Chart height in pixels (default: 450)
+        show_title: Whether to display a title (default: False)
+        title: Optional title text (overrides default if provided)
         xtick_size: Font size for x-axis ticks
         ytick_size: Font size for y-axis ticks
         title_size: Font size for chart title
@@ -529,7 +563,7 @@ def create_education_gender_chart(
     """
     # Define the base layout configuration once
     base_layout = {
-        "height": 500 if pivot_df.empty else 550,
+        "height": height if pivot_df.empty else height+50,
         "margin": dict(l=120, r=30, t=80 if show_title else 20, b=40),
         "plot_bgcolor": "white",
         "paper_bgcolor": "white",
@@ -567,7 +601,7 @@ def create_education_gender_chart(
             dict(
                 text="<b>ANTAL STUDENTER</b>",
                 font=dict(
-                    size=label_font_size+2, 
+                    size=label_font_size, 
                     color=GRAY_12,
                     family=font_family
                     ),
@@ -582,7 +616,7 @@ def create_education_gender_chart(
             dict(
                 text="<b>UTBILDNINGSOMRÅDE</b>",
                 font=dict(
-                    size=label_font_size+2,
+                    size=label_font_size,
                     color=GRAY_12,
                     family=font_family
                     ),
@@ -668,7 +702,7 @@ def create_education_gender_chart(
         
         # Only add title if requested
         if show_title:
-            title_text = custom_title
+            title_text = title
             if title_text is None:
                 title_text = f"Antal antagna per utbildningsområde ({year})"
                 
@@ -698,22 +732,24 @@ def create_education_gender_chart(
 def create_yearly_gender_chart(
     df: pd.DataFrame, 
     *,
-    show_title: bool = True,
-    custom_title: str | None = None,
-    xtick_size: int = 11,
-    ytick_size: int = 12,
-    title_size: int = 18,
-    legend_font_size: int = 12,
-    label_font_size: int = 11,
-    font_family: str = "Arial",
+    height: int = CHART_STYLE["height"],
+    show_title: bool = CHART_STYLE["show_title"],
+    title: str | None = None,  # Changed from custom_title
+    xtick_size: int = CHART_STYLE["xtick_size"],
+    ytick_size: int = CHART_STYLE["ytick_size"],
+    title_size: int = CHART_STYLE["title_size"],
+    legend_font_size: int = CHART_STYLE["legend_font_size"],
+    label_font_size: int = CHART_STYLE["label_font_size"],
+    font_family: str = CHART_STYLE["font_family"],
 ) -> go.Figure:
     """
     Creates a vertical stacked bar chart showing gender distribution across years.
     
     Parameters:
-        df: DataFrame with yearly gender data (should have columns for years and rows for gender)
-        show_title: Whether to display a title
-        custom_title: Optional custom title text
+        df: DataFrame with yearly gender data
+        height: Chart height in pixels (default: 450)
+        show_title: Whether to display a title (default: False)
+        title: Optional title text (overrides default if provided)
         xtick_size: Font size for x-axis ticks
         ytick_size: Font size for y-axis ticks
         title_size: Font size for chart title
@@ -726,7 +762,7 @@ def create_yearly_gender_chart(
     """
     # Define the base layout configuration
     base_layout = {
-        "height": 450,
+        "height": height,
         "margin": dict(l=80, r=30, t=80 if show_title else 20, b=60),
         "plot_bgcolor": "white",
         "paper_bgcolor": "white",
@@ -760,7 +796,7 @@ def create_yearly_gender_chart(
             dict(
                 text="<b>ANTAL STUDENTER</b>",
                 font=dict(
-                    size=label_font_size+2, 
+                    size=label_font_size, 
                     color=GRAY_12,
                     family=font_family,
                 ),
@@ -872,7 +908,7 @@ def create_yearly_gender_chart(
         
         # Only add title if requested
         if show_title:
-            title_text = custom_title
+            title_text = title
             if title_text is None:
                 title_text = "Antal antagna studenter per år"
                 
@@ -903,14 +939,15 @@ def create_age_gender_chart(
     year: str,
     education_area: str = "Alla områden",
     *,
-    show_title: bool = False,
-    custom_title: str | None = None,
-    xtick_size: int = 12,
-    ytick_size: int = 12,
-    title_size: int = 18,
-    legend_font_size: int = 12,
-    label_font_size: int = 11,
-    font_family: str = "Arial",
+    height: int = CHART_STYLE["height"],
+    show_title: bool = CHART_STYLE["show_title"],
+    title: str | None = None,  # Changed from custom_title
+    xtick_size: int = CHART_STYLE["xtick_size"],
+    ytick_size: int = CHART_STYLE["ytick_size"],
+    title_size: int = CHART_STYLE["title_size"],
+    legend_font_size: int = CHART_STYLE["legend_font_size"],
+    label_font_size: int = CHART_STYLE["label_font_size"],
+    font_family: str = CHART_STYLE["font_family"],
 ) -> go.Figure:
     """
     Creates a grouped bar chart showing gender distribution across age groups.
@@ -919,8 +956,9 @@ def create_age_gender_chart(
         df: DataFrame with age and gender data
         year: Year being displayed
         education_area: Selected education area to filter for
-        show_title: Whether to display a title
-        custom_title: Optional custom title text
+        height: Chart height in pixels (default: 450)
+        show_title: Whether to display a title (default: False)
+        title: Optional title text (overrides default if provided)
         xtick_size: Font size for x-axis ticks
         ytick_size: Font size for y-axis ticks
         title_size: Font size for chart title
@@ -933,7 +971,7 @@ def create_age_gender_chart(
     """
     # Define the base layout configuration
     base_layout = {
-        "height": 450,
+        "height": height,
         "margin": dict(l=80, r=30, t=80 if show_title else 20, b=60),
         "plot_bgcolor": "white",
         "paper_bgcolor": "white",
@@ -967,7 +1005,7 @@ def create_age_gender_chart(
             dict(
                 text="<b>ÅLDERSGRUPP</b>",
                 font=dict(
-                    size=label_font_size+2, 
+                    size=label_font_size, 
                     color=GRAY_12,
                     family=font_family
                     ),
@@ -982,7 +1020,7 @@ def create_age_gender_chart(
             dict(
                 text="<b>ANTAL STUDENTER</b>",
                 font=dict(
-                    size=label_font_size+2,
+                    size=label_font_size,
                     color=GRAY_12, 
                     family=font_family
                     ),
@@ -1113,7 +1151,7 @@ def create_age_gender_chart(
         
         # Only add title if requested
         if show_title:
-            title_text = custom_title
+            title_text = title
             if title_text is None:
                 area_text = f" - {education_area}" if education_area != "Alla områden" else ""
                 title_text = f"Åldersfördelning bland studenter ({year}){area_text}"

@@ -45,7 +45,6 @@ summary_sweden, _stats_sweden = get_statistics(df, county=None, label="Sverige")
 sweden_bar_chart = education_area_chart(
     summary_sweden,
     "Sverige",
-    show_title=False,
     **CHART_STYLE,
 )
 
@@ -54,7 +53,6 @@ sweden_histogram = credits_histogram(
     df,
     county=None,
     nbinsx=20,
-    show_title=False,
     **CHART_STYLE,
 )
 
