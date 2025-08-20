@@ -718,3 +718,125 @@ def calculate_gender_distribution(df, year=None):
     except Exception as e:
         logging.error(f"Error calculating gender distribution: {str(e)}")
         return {"women_pct": 0, "men_pct": 0, "ratio_simple": "0:0"}
+    
+def calculate_year_growth(df, current_year):
+    """
+    Calculate year-over-year growth in student numbers and return formatted strings.
+    
+    Parameters:
+        df: Processed student dataframe
+        current_year: The year to calculate growth for
+        
+    Returns:
+        dict: Growth statistics with pre-formatted display strings
+    """
+    try:
+        # Convert year to string for consistency
+        current_year_str = str(current_year)
+        
+        # Get available years
+        available_years = get_available_years(df)
+        if len(available_years) < 2:
+            return {
+                "growth_pct": 0, 
+                "growth_count": 0, 
+                "is_increase": False, 
+                "is_first_year": True,
+                "growth_pct_display": "**Basår**",
+                "growth_count_display": "Första året i datasetet",
+                "growth_class": "neutral-value"
+            }
+            
+        # Find index of current year
+        if current_year_str not in available_years:
+            return {
+                "growth_pct": 0, 
+                "growth_count": 0, 
+                "is_increase": False, 
+                "is_first_year": False,
+                "growth_pct_display": "**0%**",
+                "growth_count_display": "0 studenter",
+                "growth_class": "neutral-value"
+            }
+            
+        year_idx = available_years.index(current_year_str)
+        
+        # Check if it's the first year
+        if year_idx == 0:
+            return {
+                "growth_pct": 0, 
+                "growth_count": 0, 
+                "is_increase": False, 
+                "is_first_year": True,
+                "growth_pct_display": "**0% (basår)**",
+                "growth_count_display": "Första året i datasetet",
+                "growth_class": "neutral-value"
+            }
+            
+        # Get previous year
+        previous_year_str = available_years[year_idx - 1]
+            
+        # Get total student counts for both years
+        yearly_data = prepare_yearly_gender_data(df)
+        if yearly_data.empty:
+            return {
+                "growth_pct": 0, 
+                "growth_count": 0, 
+                "is_increase": False, 
+                "is_first_year": False,
+                "growth_pct_display": "**0%**",
+                "growth_count_display": "0 studenter",
+                "growth_class": "neutral-value"
+            }
+            
+        # Get total for current year
+        current_year_data = yearly_data[yearly_data["år"] == current_year_str]
+        current_total = current_year_data[current_year_data["kön"].str.lower() == "totalt"]["antal"].sum()
+        
+        # Get total for previous year
+        previous_year_data = yearly_data[yearly_data["år"] == previous_year_str]
+        previous_total = previous_year_data[previous_year_data["kön"].str.lower() == "totalt"]["antal"].sum()
+        
+        # Calculate growth
+        if previous_total > 0:
+            growth_count = current_total - previous_total
+            growth_pct = (growth_count / previous_total) * 100
+            is_increase = growth_count > 0
+            
+            # Format display strings with proper sign
+            sign = "+" if is_increase else ""
+            growth_pct_display = f"**{sign}{round(growth_pct, 1)}%**"
+            growth_count_display = f"{sign}{int(growth_count)} studenter"
+            growth_class = "positive-value" if is_increase else "negative-value"
+        else:
+            growth_count = 0
+            growth_pct = 0
+            is_increase = False
+            growth_pct_display = "**0%**"
+            growth_count_display = "0 studenter"
+            growth_class = "neutral-value"
+            
+        return {
+            "growth_pct": round(growth_pct, 1),
+            "growth_count": int(growth_count),
+            "is_increase": is_increase,
+            "is_first_year": False,
+            "previous_year": previous_year_str,
+            "previous_total": int(previous_total),
+            "current_total": int(current_total),
+            "growth_pct_display": growth_pct_display,
+            "growth_count_display": growth_count_display,
+            "growth_class": growth_class
+        }
+        
+    except Exception as e:
+        logging.error(f"Error calculating year growth: {str(e)}")
+        return {
+            "growth_pct": 0, 
+            "growth_count": 0, 
+            "is_increase": False, 
+            "is_first_year": False,
+            "growth_pct_display": "**0%**",
+            "growth_count_display": "0 studenter",
+            "growth_class": "neutral-value"
+        }

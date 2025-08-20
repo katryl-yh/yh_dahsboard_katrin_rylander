@@ -12,7 +12,8 @@ from backend.data_processing import (
     prepare_education_gender_data,
     prepare_yearly_gender_data,  
     get_education_areas, 
-    calculate_gender_distribution,        
+    calculate_gender_distribution,   
+    calculate_year_growth,     
 )
 from utils.constants import PROJECT_ROOT
 from frontend.charts import (
@@ -21,7 +22,13 @@ from frontend.charts import (
     create_age_gender_chart
 )
 
-
+def _safe_refresh(state, *var_names):
+    if hasattr(state, "refresh"):
+        for v in var_names:
+            try:
+                state.refresh(v)
+            except Exception as e:
+                logging.warning("refresh(%s) failed: %s", v, e)
 # --------- TAIPY CALLBACK FUNCTIONS ---------
 
 def on_year_change(state):
@@ -59,6 +66,27 @@ def on_year_change(state):
         state.year_gender_ratio = year_gender_stats["ratio_simple"]
         state.year_women_count = year_gender_stats["women_count"]
         state.year_men_count = year_gender_stats["men_count"]
+
+        # Update growth stats for the selected year
+        growth_stats = calculate_year_growth(state.df, state.selected_year)
+        state.growth_pct_display = growth_stats["growth_pct_display"]
+        state.growth_count_display = growth_stats["growth_count_display"]
+        state.growth_class = growth_stats["growth_class"]
+
+        # Use _safe_refresh to refresh all the updated state variables
+        _safe_refresh(
+            state,
+            "student_chart",
+            "age_chart",
+            "year_women_pct",
+            "year_men_pct",
+            "year_gender_ratio",
+            "year_women_count",
+            "year_men_count",
+            "growth_pct_display",
+            "growth_count_display",
+            "growth_class"
+        )
     
     
     except Exception as e:
@@ -150,6 +178,12 @@ year_gender_ratio = year_gender_stats["ratio_simple"]
 year_women_count = year_gender_stats["women_count"]
 year_men_count = year_gender_stats["men_count"]
 
+# Calculate growth stats for selected year
+growth_stats = calculate_year_growth(df, selected_year)
+growth_pct_display = growth_stats["growth_pct_display"]
+growth_count_display = growth_stats["growth_count_display"]
+growth_class = growth_stats["growth_class"]
+
 # --------- UI DEFINITION ---------
 
 with tgb.Page() as students_page:
@@ -188,6 +222,9 @@ with tgb.Page() as students_page:
                                 on_change=on_year_change,
                                 class_name="padded-selector"
                                 )
+
+                    tgb.text("#### Tillväxt i antagna från föregående år: {growth_pct_display} ", mode="md")
+                   
                     tgb.text("#### Könsfördelning bland YH-studenter {selected_year}", mode="md")
     
                     with tgb.layout(columns="1 1 1"):
