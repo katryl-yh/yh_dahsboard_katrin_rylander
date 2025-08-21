@@ -103,3 +103,32 @@
 .padded-selector {
   padding-top: 20px;  /* Adjust this value as needed */
 }
+
+.about-header {
+  margin-bottom: 2rem;
+}
+
+.about-section {
+  margin-bottom: 2.5rem;
+}
+
+.about-content {
+  margin-left: 1rem;
+  padding-left: 1rem;
+  border-left: 3px solid #5d97c0;
+}
+
+.about-content.strengths {
+  border-left-color: #4CAF50;
+}
+
+.about-content.improvements {
+  border-left-color: #FF9800;
+}
+
+@media (max-width: 768px) {
+  .about-content {
+    margin-left: 0;
+    padding-left: 0.5rem;
+  }
+}

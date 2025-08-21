@@ -4,7 +4,7 @@ from frontend.pages.county import county_page
 from frontend.pages.providers import providers_page
 from frontend.pages.storytelling import storytelling
 from frontend.pages.students import students_page
-
+from frontend.pages.about import about_page
 
 pages = {
     "hem": home_page,
@@ -12,6 +12,7 @@ pages = {
     "anordnare": providers_page,
     "antagna": students_page,
     "datainsikter": storytelling,
+    "om": about_page
 }
 
 
