@@ -1,5 +1,6 @@
 import taipy.gui.builder as tgb
 from utils.constants import PROJECT_ROOT
+import textwrap
 
 # Project images
 dashboard_overview = f"{PROJECT_ROOT}/assets/about/dashboard_overview.png"
@@ -24,98 +25,99 @@ with tgb.Page() as about_page:
                 tgb.text("### 1. Uppdraget", mode="md")
                 
                 with tgb.part(class_name="about-content"):
-                    tgb.text("""
-                    **Målsättning:**
+                    tgb.text("Målsättning:", class_name="section-heading")
+                    tgb.text(textwrap.dedent("""\
                     - Att skapa ett verktyg som ger möjlighet att analysera trender och stödja strategiska beslut gällande YH-kurser
                     - Att utveckla en Minimum Viable Product där olika komponenter samverkar logiskt för att skapa sammanhang och värde
-                    
-                    **Framgångskriterier:**
+                    """), mode="md")
+                    tgb.text("Framgångskriterier:", class_name="section-heading")
+                    tgb.text(textwrap.dedent("""\
                     - Tydlig struktur med logiskt organiserad data
                     - Flera funktionella sidor med användbar statistik och visualiseringar
                     - Konsekvent design genom hela applikationen
                     - Fokus på relevanta nyckeltal för YH-utbildningsdata
-                    """, mode="md")
+                    """), mode="md")
             
             # Project process section
             with tgb.part(class_name="about-section"):
                 tgb.text("### 2. Projektprocess", mode="md")
                 
                 with tgb.part(class_name="about-content"):
-                    tgb.text("""
-                    **Arbetsmetodik:**
+                    tgb.text("Arbetsmetodik:", class_name="section-heading")
+                    tgb.text(textwrap.dedent("""\
                     - Analys av YH-data från SCB och MYH för att förstå datakällorna och deras struktur
                     - Identifiering av nyckelinsikter och KPI:er som skapar värde för utbildningsanordnare
                     - Användning av LLM som kodpartner för att effektivisera utvecklingsprocessen
                     - Kontinuerlig utvärdering och anpassning baserat på nya insikter
+                    """), mode="md")
                     
-                    **Rollfördelning:**
-                    - **Utvecklare:** Grundläggande projektstruktur, domänkunskap om YH-utbildningar, anpassningar och integration av förslag, originaldesign och koncept
-                    - **AI-assistans:** Stöd med specifika funktioner och kodlösningar
-                    """, mode="md")
+                    tgb.text("Rollfördelning:", class_name="section-heading")
+                    tgb.text(textwrap.dedent("""\
+                    - Utvecklare: Grundläggande projektstruktur, domänkunskap om YH‑utbildningar, anpassningar och integration av förslag, samt originaldesign och koncept
+                    - AI‑assistans: Stöd med specifika funktioner och kodlösningar
+                    """), mode="md")
                     
-                    # Optional: Add process diagram if available
-                    # tgb.image("{process_diagram}", width="80%")
-            
             # Main features section
             with tgb.part(class_name="about-section"):
                 tgb.text("### 3. Huvudfunktioner i dashboarden", mode="md")
                 
                 with tgb.part(class_name="about-content"):
-                    tgb.text("""
-                    **Översiktssida**
-                    - Snabb överblick över nyckeltal för YH-utbildningar
+                    tgb.text("Översiktssida:", class_name="section-heading")
+                    tgb.text(textwrap.dedent("""\
+                    - Snabb överblick över nyckeltal för YH‑utbildningar
                     - Design som gör data lättillgänglig och begriplig
+                    """), mode="md")
                     
-                    **Studentanalys**
-                    - Fokus på könsfördelning inom YH-utbildningar
-                    - Kritiskt underlag för utbildningsanordnare att förstå rekryteringsbehov och arbeta mot jämställdhetsmål
+                    tgb.text("Studentanalys:", class_name="section-heading")
+                    tgb.text(textwrap.dedent("""\
+                    - Fokus på könsfördelning inom YH‑utbildningar
+                    - Viktigt underlag för utbildningsanordnare att förstå rekryteringsbehov och arbeta mot jämställdhetsmål
+                    """), mode="md")
                     
-                    **Länsfördelning**
+                    tgb.text("Länsfördelning:", class_name="section-heading")
+                    tgb.text(textwrap.dedent("""\
                     - Geografisk visualisering av utbildningsmöjligheter i Sverige
                     - Underlag för att identifiera områden där utbildningsutbudet kan behöva utökas
+                    """), mode="md")
                     
-                    **Anordnaranalys**
+                    tgb.text("Anordnaranalys:", class_name="section-heading")
+                    tgb.text(textwrap.dedent("""\
                     - Filtreringsmöjligheter för specifika anordnare
-                    - Verktyg för att jämföra prestationer och dra lärdomar från konkurrerande anordnare
-                    """, mode="md")
+                    - Möjlighet att jämföra prestationer och lära från konkurrenter
+                    """), mode="md")
                     
-                    # Dashboard overview image
-                    # tgb.image("{dashboard_overview}", width="80%")
-            
             # Lessons learned section
             with tgb.part(class_name="about-section"):
                 tgb.text("### 4. Huvudlärdomar", mode="md")
                 
                 with tgb.part(class_name="about-content strengths"):
-                    tgb.text("""
-                    **Tre främsta styrkorna:**
-                    
-                    1. **Välorganiserad kodstruktur**
+                    tgb.text("Tre främsta styrkorna:", class_name="section-heading")
+                    tgb.text(textwrap.dedent("""\
+                    1. Välorganiserad kodstruktur
                        - Tydlig och logisk uppdelning mellan frontend, backend och utilities
                        - Separata moduler för databearbetning, visualisering och användargränssnitt
-                       
-                    2. **Omfattande datavisualisering**
+
+                    2. Omfattande datavisualisering
                        - Implementation av olika diagramtyper (stapeldiagram, geografiska kartor)
                        - Filtreringsmöjligheter och dynamisk uppdatering baserat på användarval
-                       
-                    3. **Väl genomtänkta KPI:er** 
+
+                    3. Väl genomtänkta KPI:er
                        - Relevanta nyckeltal som ger meningsfull insikt i data
                        - Tydlig presentation som underlättar förståelse
-                    """, mode="md")
+                    """), mode="md")
                 
                 with tgb.part(class_name="about-content improvements"):
-                    tgb.text("""
-                    **Tre förbättringsområden:** 
-                    
-                    1. **Layout och responsivitet**
-                       - Vissa delar av gränssnittet kan förbättras för bättre skärmstorlekanpassning
-                       - Mer konsekvent användning av rutnät och marginaler skulle förbättra det visuella flödet
-                       
-                    2. **Datalogik och felhantering**
-                       - Utökad felhantering, särskilt för saknade data eller oväntade dataformat
+                    tgb.text("Tre förbättringsområden:", class_name="section-heading")
+                    tgb.text(textwrap.dedent("""\
+                    1. Layout och responsivitet
+                       - Förbättra anpassning för olika skärmstorlekar
+                       - Konsekvent användning av rutnät och marginaler för bättre visuellt flöde
+
+                    2. Datalogik och felhantering
+                       - Utökad felhantering för saknade eller oväntade dataformat
                        - Fler validerings- och sanitetskontroller för indata
-                       
-                    3. **Kodstruktur och återanvändning**
-                       - Viss duplicering mellan sidor kan brytas ut till gemensamma komponenter
-                    """, mode="md")
+
+                    3. Kodstruktur och återanvändning
+                       - Minska duplicering genom att bryta ut gemensamma komponenter
+                    """), mode="md")
             
